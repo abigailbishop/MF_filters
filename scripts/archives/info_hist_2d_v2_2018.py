@@ -26,7 +26,7 @@ else:
 d_list = sorted(glob(f'/data/exp/ARA/2018/unblinded/L1/ARA0{Station}/*/run*/event[0-9]*.root'))
 d_run_num = []
 for d in d_list:
-    d_run_num.append(int(re.sub("\D", "", d[-11:])))
+    d_run_num.append(int(re.sub(r"\D", "", d[-11:])))
 d_run_num = np.asarray(d_run_num)
 run_index = np.argsort(d_run_num)
 run_tot = d_run_num[run_index]

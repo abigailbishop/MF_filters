@@ -23,7 +23,7 @@ def file_sorter(d_path):
     run_tot=np.full((d_len),-1,dtype=int)
     aa = 0
     for d in d_list_chaos:
-        run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+        run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
         aa += 1
     del aa
 
@@ -268,7 +268,7 @@ def list_maker(glob_path, Station, Year):
     d_list = glob(glob_path)
     d_run_num = []
     for d in d_list:
-        run_num = int(re.sub("\D", "", d[-11:]))
+        run_num = int(re.sub(r"\D", "", d[-11:]))
         d_run_num.append(run_num)
         del run_num
     d_run_num = np.asarray(d_run_num)
@@ -369,7 +369,7 @@ def data_info_reader(d_path_str):
     # these informations might can salvage from root file itself in future...
 
     # salvage just number
-    d_path = re.sub("\D", "", d_path_str) 
+    d_path = re.sub(r"\D", "", d_path_str) 
 
     # year
     yr = int(d_path[:4])
@@ -379,7 +379,7 @@ def data_info_reader(d_path_str):
         st = int(d_path[7:9])
 
         # run 
-        run = int(re.sub("\D", "", d_path_str[-11:]))
+        run = int(re.sub(r"\D", "", d_path_str[-11:]))
 
         # config
         config = config_checker(st, run)

@@ -38,7 +38,7 @@ for d in d_list:
 
     h5_file = h5py.File(d, 'r')
 
-    run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+    run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
     config_tot[aa] = int(h5_file['Config'][:][0])
     psd_tot[:,:,aa] = h5_file['soft_psd'][:]
 

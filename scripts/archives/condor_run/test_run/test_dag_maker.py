@@ -15,7 +15,7 @@ def file_sorter(d_path):
     run_tot=np.full((d_len),-1,dtype=int)
     aa = 0
     for d in d_list_chaos:
-        run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+        run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
         aa += 1
     del aa
 
@@ -36,7 +36,7 @@ def list_maker(glob_path, Station, Year):
     d_list = glob(glob_path)
     d_run_num = []
     for d in d_list:
-        run_num = int(re.sub("\D", "", d[-11:]))
+        run_num = int(re.sub(r"\D", "", d[-11:]))
         d_run_num.append(run_num)
         del run_num
     d_run_num = np.asarray(d_run_num)

@@ -134,7 +134,7 @@ class run_info_loader:
 
         # salvage just number
         dat_path = self.get_data_path()
-        dat_path_num = re.sub("\D", "", dat_path)
+        dat_path_num = re.sub(r"\D", "", dat_path)
 
         config = self.get_config_number() 
         year = int(dat_path_num[:4])
@@ -143,7 +143,7 @@ class run_info_loader:
                 station = int(dat_path_num[8:10])
             else:
                 station = int(dat_path_num[7:9])
-            run_num = int(re.sub("\D", "", dat_path[-11:]))
+            run_num = int(re.sub(r"\D", "", dat_path[-11:]))
             month = -1
             date = -1
         else:
@@ -302,7 +302,7 @@ class batch_info_loader:
                 num_in_str = d[-11:]
                 if num_in_str.find('_') != -1:
                     continue
-                run_num = int(re.sub("\D", "", num_in_str))
+                run_num = int(re.sub(r"\D", "", num_in_str))
                 run_yrs_list.append(run_num)
                 dat_yrs_list.append(d)
                 del run_num
@@ -366,7 +366,7 @@ class batch_info_loader:
        
         # final check
         for f in range(len(run_list)):
-            run_num = int(re.sub("\D", "", dat_list_new[f][-11:]))
+            run_num = int(re.sub(r"\D", "", dat_list_new[f][-11:]))
             if run_list[f] != run_num:
                 print(run_list[f], run_num)
                 print('Run number doesnt match!')
@@ -386,7 +386,7 @@ def file_sorter(d_path):
     run_tot=np.full((d_len),-1,dtype=int)
     aa = 0
     for d in d_list_chaos:
-        run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+        run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
         aa += 1
     del aa
 

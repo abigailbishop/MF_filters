@@ -29,7 +29,7 @@ print(d_len)
 run_tot=np.full((d_len),np.nan,dtype=int)
 aa = 0
 for d in d_list:
-    run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+    run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
     aa += 1
 del aa, d_path
 

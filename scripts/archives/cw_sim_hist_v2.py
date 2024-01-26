@@ -26,8 +26,8 @@ def file_sorter(d_path):
     run_tot=np.full((d_len),-1,dtype=int)
     aa = 0
     for d in d_list_chaos:
-        #run_tot[aa] = int(re.sub("\D", "", d[-9:-3]))
-        run_tot[aa] = int(re.sub("\D", "", d[-17:-11]))
+        #run_tot[aa] = int(re.sub(r"\D", "", d[-9:-3]))
+        run_tot[aa] = int(re.sub(r"\D", "", d[-17:-11]))
         aa += 1
     del aa
 

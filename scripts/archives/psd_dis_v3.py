@@ -31,7 +31,7 @@ run_tot=np.full((d_len),np.nan)
 aa = 0
 for d in d_list:
 
-    run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+    run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
     aa += 1
 
 if Station == 2:
@@ -56,7 +56,7 @@ print(psd_tot.shape)
 aa = 0
 for d in d_list:
 
-    run_loc = np.where(run_range == int(re.sub("\D", "", d[-8:-1])))[0][0]
+    run_loc = np.where(run_range == int(re.sub(r"\D", "", d[-8:-1])))[0][0]
 
     h5_file = h5py.File(d, 'r')
     #config_tot[run_loc] = int(h5_file['Config'][:][2])

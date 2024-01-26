@@ -60,7 +60,7 @@ def l1_loader(Station = None):
         ped_path = f'/data/exp/ARA/{int(yrs)}/calibration/pedestals/ARA0{Station}/'    
         ped_config_path = glob(f'{ped_path}configFile*')
         for p in ped_config_path:
-            run_num = int(re.sub("\D", "", p[-10:-4]))
+            run_num = int(re.sub(r"\D", "", p[-10:-4]))
             run_arr[run_num] = run_num
             run_type[run_num] = 0    
 

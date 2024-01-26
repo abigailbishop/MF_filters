@@ -29,7 +29,7 @@ run_tot=np.full((d_len),np.nan)
 aa = 0
 for d in d_list:
 
-    run_tot[aa] = int(re.sub("\D", "", d[-8:-1]))
+    run_tot[aa] = int(re.sub(r"\D", "", d[-8:-1]))
     aa += 1
 
 run_range = np.arange(np.nanmin(run_tot),np.nanmax(run_tot)+1).astype(int)
@@ -43,7 +43,7 @@ scale_wo_sc_all = np.full((1024,16,len(run_range)), np.nan)
 aa = 0
 for d in d_list:
 
-    run_loc = np.where(run_range == int(re.sub("\D", "", d[-8:-1])))[0][0]
+    run_loc = np.where(run_range == int(re.sub(r"\D", "", d[-8:-1])))[0][0]
 
     h5_file = h5py.File(d, 'r')
     if aa == 0:

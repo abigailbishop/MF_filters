@@ -9,7 +9,7 @@ def list_maker(glob_path, Station, Year):
     d_list = glob(glob_path)
     d_run_num = []
     for d in d_list:
-        run_num = int(re.sub("\D", "", d[-11:]))
+        run_num = int(re.sub(r"\D", "", d[-11:]))
         d_run_num.append(run_num)
         del run_num
     d_run_num = np.asarray(d_run_num)

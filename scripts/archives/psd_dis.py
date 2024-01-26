@@ -39,7 +39,7 @@ aa = 0
 cc = 0
 for d in d_list:
 
-    d_run = int(re.sub("\D", "", d[-8:-1]))
+    d_run = int(re.sub(r"\D", "", d[-8:-1]))
     
     try:
         a = np.where(bad_runs == d_run)[0][0]
