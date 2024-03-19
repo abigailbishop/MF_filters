@@ -462,7 +462,7 @@ class run_info_loader:
 
 class batch_info_loader:
 
-    def __init__(self, st, year = (2013, 2021)):
+    def __init__(self, st, year = (2013, 2022)):
 
         self.st = st
         self.years = np.arange(year[0], year[1], dtype = int)
