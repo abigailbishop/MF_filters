@@ -241,6 +241,10 @@ class run_info_loader:
                 break
             del line, run_num
         list_file.close()
+        if dat_path == "0": 
+            print(f"No data path provided for run {self.run} in the run list "
+                  f"file located at {list_name}")
+            sys.exit(1)
         del list_path, list_name, list_file, blind_type
 
         if os.path.exists(dat_path):
@@ -254,6 +258,8 @@ class run_info_loader:
                     print(f'{file_type}_dat_path:{dat_path} -> /exp/ is replaced to /wipac/!!', size_checker(dat_path))
             else:
                 print(f'There is no desired {file_type} data!')
+                if verbose: 
+                    print("Looked for data here:\n\t", dat_path,"\n\t", temp_dat_path)
                 if return_none == True:
                     return None
                 else:
