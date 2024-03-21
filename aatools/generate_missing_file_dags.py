@@ -1,6 +1,3 @@
-JOB job_ARA_S2_R19819 ARA_job.sub
-VARS job_ARA_S2_R19819 station="2" run="19819"
-
 def generate_dag(runlist, save_dir, station): 
     from numpy import savetxt
     output = []
