@@ -1,10 +1,10 @@
 def generate_dag(runlist, save_dir, station): 
-    from numpy import savetxt
-    output = []
+    print("Saving new dag to:",save_dir+f"A{station}_missing.dag")
+    file = open(save_dir+f"A{station}_missing.dag", "w")
     for run in runlist: 
-        output.append(f"JOB job_ARA_S2_R{run} ARA_job.sub")
-        output.append(f'VARS job_ARA_S2_R{run} station="{station}" run="{run}"')
-    savetxt(save_dir+f"A{station}_missing.dag", output)
+        file.write(f"JOB job_ARA_S2_R{run} ARA_job.sub\n")
+        file.write(f'VARS job_ARA_S2_R{run} station="{station}" run="{run}"\n\n')
+    file.close()
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
     from find_missing_outputs import find_missing_outputs
     missing_runs = find_missing_outputs(
         args.runlist, args.output_dir, args.first_run, args.last_run)
-    generate_dag(missing_runs, args.savedir, args.station)
+    generate_dag(missing_runs, args.save_dir, args.station)
 
     return
 
