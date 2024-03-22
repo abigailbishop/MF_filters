@@ -40,7 +40,11 @@ def find_missing_outputs(runlist, output_dir, first_run, last_run):
         runlist, first_run, last_run)
     output_runs = get_runs_from_output_dir(output_dir)
     missing_files = sorted(find_missing_files(input_runs, output_runs))
-    print(len(input_runs), len(output_runs), len(missing_files))
+    
+    print("Number of input runs:", len(input_runs))
+    print("Number of output runs:", len(output_runs))
+    print("Number of missing files:", len(missing_files))
+    print()
     print(missing_files)
 
     return missing_files
