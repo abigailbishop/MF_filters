@@ -19,7 +19,7 @@ def get_runs_from_output_dir(output_dir):
     output_files = listdir(output_dir)
     for file in output_files: 
         # sub_info_full_A2_R18620.h5
-        run_num = int(file.split(".h5")[-2].split("R")[-1])
+        run_num = int(file.split(".")[-2].split("R")[-1])
         runs.append(run_num)
 
     return tuple(runs)
