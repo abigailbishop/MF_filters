@@ -40,7 +40,7 @@ def cw_band_collector(Data, Station, Run, analyze_blind_dat = False, no_tqdm = F
     del run_info
 
     # pre quality cut
-    daq_qual_cut = get_bad_events(Station, Run, analyze_blind_dat = analyze_blind_dat, verbose = True, evt_num = evt_num, use_1st = True)[0]
+    daq_qual_cut = get_bad_events(Station, Run, analyze_blind_dat = analyze_blind_dat, verbose = True, evt_num = evt_num, qual_type=1)[0]
 
     # group bad frequency
     cw_freq = group_bad_frequency(Station, Run, freq_range, verbose = True) # constructor for bad frequency grouping function
