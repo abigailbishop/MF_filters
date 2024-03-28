@@ -1,6 +1,6 @@
-log    = /scratch/mkim/wipac/logs/A$(station).R$(run).log
-output = /scratch/mkim/wipac/logs/A$(station).R$(run).out
-error  = /scratch/mkim/wipac/logs/A$(station).R$(run).err
+log    = /scratch/abishop/ara/a23/sub_info_full/logs/A$(station).R$(run).log
+output = /scratch/abishop/ara/a23/sub_info_full/out/A$(station).R$(run).out
+error  = /scratch/abishop/ara/a23/sub_info_full/err/A$(station).R$(run).err
 
 request_memory = 1GB
 #request_disk = 2GB

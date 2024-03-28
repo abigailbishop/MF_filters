@@ -2,7 +2,9 @@ import os, sys
 import numpy as np
 from subprocess import call
 
-def ped_collector(Data, Station, Run, analyze_blind_dat = False):
+def ped_collector(
+    Data, Station, Run, analyze_blind_dat = False, include_qual_cut = True
+):
 
     if analyze_blind_dat == False:
         print('chunk_ped is not meant for burn sample! try with 100% data!')
@@ -19,10 +21,11 @@ def ped_collector(Data, Station, Run, analyze_blind_dat = False):
     if not os.path.exists(ped_path):
         os.makedirs(ped_path)
 
-    qual_path = f'{ped_path}ped{blind_type}_qualities_A{Station}_R{Run}.dat'
-    if not os.path.exists(qual_path):
-        print(f'{qual_path} is not there!!')
-        sys.exit(1)
+    if include_qual_cut: 
+        qual_path = f'{ped_path}ped{blind_type}_qualities_A{Station}_R{Run}.dat'
+        if not os.path.exists(qual_path):
+            print(f'{qual_path} is not there!!')
+            sys.exit(1)
 
     out_path = f'{ped_path}ped{blind_type}_values_A{Station}_R{Run}.dat'
     del blind_type, ped_path
@@ -32,14 +35,18 @@ def ped_collector(Data, Station, Run, analyze_blind_dat = False):
     os.chdir(repeder_dir)
     del repeder_dir
 
-    repeder_cmd = f"./repeder -d -m 0 -M 4096 -q {qual_path} {Data} {out_path}"
+    if include_qual_cut: 
+        print("Running repeder with quality cuts:", qual_path)
+        repeder_cmd = f"./repeder -d -m 0 -M 4096 -q {qual_path} {Data} {out_path}"
+    else: 
+        print("Running repeder without the quality cuts file.")
+        repeder_cmd = f"./repeder -d -m 0 -M 4096 {Data} {out_path}"
     print(f'excuted cmd: {repeder_cmd}') 
     call(repeder_cmd.split())
     del repeder_cmd
 
     print('Ped collecting is done!')
     print(f'output is {out_path}.', size_checker(out_path))
-    del out_path, qual_path
 
     return
 

@@ -1290,14 +1290,40 @@ class run_qual_cut_loader:
         self.ped_flag = np.all(tot_cut[:, 26] != 0)       
         cut_copy = np.copy(tot_cut)
         if use_all_cuts == False:
-            print('No L1 & Soft only & Bad run & Bad ped cut & vertex z & vertex theta & mf in the ped qual!!')
-            cut_copy[:, 14] = 0 # no cal rf
-            cut_copy[:, 15] = 0 # no l1 cut
-            cut_copy[:, 18] = 0 # bad run
-            cut_copy[:, 26] = 0 # bad ped
-            cut_copy[:, 30] = 0 # vertex z
-            cut_copy[:, 31] = 0 # vetrex theta
-            cut_copy[:, 32] = 0 # mf
+            if cut_copy.shape[1] == 26: 
+                # qual_cut_1st and 2nd with use_unlock_cal=False
+                print('No L1 & Soft only & Bad run & Bad ped cut!!')
+                cut_copy[:, 14] = 0 # no cal rf
+                cut_copy[:, 15] = 0 # no l1 cut
+                cut_copy[:, 18] = 0 # bad run
+                cut_copy[:, 25] = 0 # bad ped
+            elif cut_copy.shape[1] == 27: 
+                # qual_cut_1st and 2nd with use_unlock_cal=True
+                print('No L1 & Soft only & Bad run & Bad ped cut!!')
+                cut_copy[:, 14] = 0 # no cal rf
+                cut_copy[:, 15] = 0 # no l1 cut
+                cut_copy[:, 18] = 0 # bad run
+                cut_copy[:, 26] = 0 # bad ped
+            elif cut_copy.shape[1] == 36: 
+                # qual_cut_3rd with use_unlock_cal=Fale
+                print('No L1 & Soft only & Bad run & Bad ped cut & vertex z & vertex theta & mf in the ped qual!!')
+                cut_copy[:, 14] = 0 # no cal rf
+                cut_copy[:, 15] = 0 # no l1 cut
+                cut_copy[:, 18] = 0 # bad run
+                cut_copy[:, 25] = 0 # bad ped
+                cut_copy[:, 29] = 0 # vertex z
+                cut_copy[:, 30] = 0 # vetrex theta
+                cut_copy[:, 31] = 0 # mf
+            elif cut_copy.shape[1] == 37: 
+                # qual_cut_3rd with use_unlock_cal=True
+                print('No L1 & Soft only & Bad run & Bad ped cut & vertex z & vertex theta & mf in the ped qual!!')
+                cut_copy[:, 14] = 0 # no cal rf
+                cut_copy[:, 15] = 0 # no l1 cut
+                cut_copy[:, 18] = 0 # bad run
+                cut_copy[:, 26] = 0 # bad ped
+                cut_copy[:, 30] = 0 # vertex z
+                cut_copy[:, 31] = 0 # vetrex theta
+                cut_copy[:, 32] = 0 # mf
         cut_copy = np.nansum(cut_copy, axis = 1)
         self.qual_flag = np.all(cut_copy != 0)
         del cut_copy

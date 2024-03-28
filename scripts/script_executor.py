@@ -26,7 +26,11 @@ from tools.ara_utility import size_checker
 @click.option('-p', '--pulser', default = '', type = str)
 @click.option('-dd', '--data', default = '', type = str)
 @click.option('-pp', '--ped', default = '', type = str)
-def script_loader(key, station, run, qual_type, act_evt, blind_dat, condor_run, not_override, l2_data, no_tqdm, pulser, data, ped):
+@click.option('-qc', '--include_qual_cut', default = True, type = bool)
+def script_loader(
+    key, station, run, qual_type, act_evt, blind_dat, condor_run, not_override, 
+    l2_data, no_tqdm, pulser, data, ped, include_qual_cut
+):
 
     if not_override:
         blind_type = ''
@@ -116,7 +120,7 @@ def script_loader(key, station, run, qual_type, act_evt, blind_dat, condor_run, 
     elif key == 'l1':
         results = method(Data, Ped, station, run, Year, analyze_blind_dat = blind_dat)
     elif key == 'ped':
-        results = method(Data, station, run, analyze_blind_dat = blind_dat)
+        results = method(Data, station, run, analyze_blind_dat = blind_dat, include_qual_cut = include_qual_cut)
         return
     elif key == 'cw_band':
         results = method(Data, station, run, analyze_blind_dat = blind_dat, no_tqdm = no_tqdm)
