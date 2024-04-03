@@ -52,11 +52,7 @@ def rayl_nb_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, use_
     del num_ddas
 
     # pre quality cut
-    tot_cuts = get_bad_events(st, run, analyze_blind_dat = analyze_blind_dat, verbose = True, evt_num = evt_num)[1]
-    warning = input("This call of get_bad_events is missing the qual_type flag so it will default to 1. Is it this what you intend? Type Yes or No.")
-    if warning.lower()!="yes":
-        import sys
-        sys.exit()
+    tot_cuts = get_bad_events(st, run, analyze_blind_dat = analyze_blind_dat, verbose = True, evt_num = evt_num, qual_type=2)[1]
    
     # clean soft trigger 
     clean_rf_idx = np.logical_and(~tot_cuts, trig_type == 0)
