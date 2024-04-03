@@ -21,13 +21,26 @@ def make_shell_script(
     ]
     
     commands = []
-    for run in runs: 
+    squiggles  = "~"*60
+    for i, run in enumerate(runs): 
+        commands.append(rf'printf "\n\n{squiggles}\n"')
         commands.append(
-            f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
-            f"-k {key} -s {station} -r {run} -b {blind_dat} "
-            f"-c {condor_run} -n {not_override} -q {qual_type} "
-            f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
+            fr'printf "\tRunning script for run {run} ({i+1}/{len(runs)})"'
         )
+        commands.append(rf'printf "\n{squiggles}\n"')
+        for key in ["cw_flag", "cw_band", "cw_ratio", "qual_cut_2nd", "snr"]:
+            commands.append(rf'printf "Running script for {key}\n"')
+            qual_type = 2 if key == "qual_cut_2nd" else 1
+            commands.append(
+                f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
+                f"-k {key} -s {station} -r {run} -b {blind_dat} "
+                f"-c {condor_run} -n {not_override} -q {qual_type} "
+                f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
+            )
+            commands.append(rf'printf "Done!\n\n\n"')
+        commands.append(rf'printf "\n"')
+        commands.append(rf'printf "\n"')
+        commands.append("")
 
     file = open(file_name, "w")
     file.write(shebang+"\n\n")
