@@ -25,6 +25,7 @@ class wf_analyzer:
         self.use_l2 = use_l2
         self.dt = dt
         self.num_chs = num_ants
+        self.use_debug = use_debug
         if use_ele_ch:
             if self.verbose:
                 print('Electronic channel is on!')
@@ -57,6 +58,15 @@ class wf_analyzer:
             if self.verbose:
                 print('Kill the CW!')
             self.cw_geo = py_geometric_filter(int(st), int(run), analyze_blind_dat = analyze_blind_dat, sim_path = sim_path)
+
+        phase_path = '/home/mkim/analysis/MF_filters/data/sc_info/SC_Phase_from_sim.txt'
+        if self.verbose:
+            print('phase path:', phase_path)
+        sc_p = np.loadtxt(phase_path)
+        sc_freq_phase = sc_p[:, 0] / 1e3 # MHz to GHz
+        sc_phase = sc_p[:, 1]
+        self.sc_phases = interp1d(sc_freq_phase, sc_phase, fill_value = 'extrapolate')
+        del phase_path, sc_p
 
     def get_band_pass_filter(self, low_freq_cut = 0.13, high_freq_cut = 0.85, order = 10, pass_type = 'band'):
 
@@ -138,7 +148,8 @@ class wf_analyzer:
                     use_cw = False, use_cw_ratio = False,
                     use_noise_weight = False,
                     use_p2p = False, use_unpad = False,
-                    use_sim = False, evt = None):
+                    use_sim = False, evt = None, 
+                    dedisperse = False):
 
         if self.use_l2:
             int_idx = np.in1d(self.pad_idx, (raw_t / self.dt).astype(int))
@@ -196,6 +207,10 @@ class wf_analyzer:
 
         self.pad_num[ant] = 0
         self.pad_num[ant] = int_num
+
+        if dedisperse: 
+            self.dedisperse_wf(ant)
+
         del int_idx, int_v, int_num      
 
     def get_fft_wf(self, use_zero_pad = False, use_nan_check = False, use_rfft = False, use_abs = False, use_norm = False, use_dBmHz = False, use_dB = False, use_phase = False):
@@ -260,6 +275,35 @@ class wf_analyzer:
         del upper_peak_idx, lower_peak_idx, peak_idx, peak
 
         return p2p
+
+    def dedisperse_wf(self, ant):
+
+        pad_num_ant = self.pad_num[ant]
+
+        # Get frequency binning for fft
+        wf_freq = np.fft.rfftfreq(pad_num_ant, self.dt)
+        
+        # Get the phases and work them in, getting a real + complex result
+        int_sc_phase = self.sc_phases(wf_freq)
+        if self.use_debug:
+            self.int_sc_freq = np.copy(wf_freq)
+            self.int_sc_phase = np.copy(int_sc_phase)
+        int_sc_com = np.exp((0 + 1j) * int_sc_phase) 
+        del wf_freq, int_sc_phase
+
+        # Perform fourier transform and divide out the signal chain phases
+        wf_fft = np.fft.rfft(self.pad_v[:pad_num_ant, ant])
+        wf_fft /= int_sc_com 
+        del int_sc_com   
+ 
+        # Reverse fourier transform the waveform with the phases removed
+        dd_wf_v = np.fft.irfft(wf_fft, n = pad_num_ant)
+        if self.use_debug:
+            self.dd_fft_v = np.copy(wf_fft)
+        self.pad_v[:pad_num_ant, ant] = np.copy(dd_wf_v) # overwrite pad_v with dd wf
+        del wf_fft, pad_num_ant
+
+        return 
 
 class hist_loader():
 

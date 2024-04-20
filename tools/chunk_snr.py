@@ -60,15 +60,30 @@ def snr_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm 
         # get entry and wf
         ara_root.get_entry(evt)
         ara_root.get_useful_evt(ara_root.cal_type.kLatestCalibWithOutTrimFirstBlock)
+
+        if 101<evt<120: 
+            old_debug = wf_int.use_debug
+            wf_int.use_debug=True
+            old_pad_t, old_pad_v = ara_root.get_rf_ch_wf(2)
         
         # loop over the antennas
         for ant in range(num_ants):
             raw_t, raw_v = ara_root.get_rf_ch_wf(ant)
-            wf_int.get_int_wf(raw_t, raw_v, ant, use_band_pass = True, use_cw = True, use_p2p = True, evt = evt)
+            wf_int.get_int_wf(raw_t, raw_v, ant, use_band_pass = True, use_cw = True, use_p2p = True, evt = evt,  dedisperse=True)
             p2p[ant, evt] = wf_int.int_p2p
             del raw_t, raw_v
             ara_root.del_TGraph()
         ara_root.del_usefulEvt()   
+
+        if 101<evt<120: 
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots()
+            ax.plot(old_pad_t, old_pad_v, label="Before Dedispersion", alpha=0.75)
+            ax.plot(wf_int.pad_t[:,2], wf_int.pad_v[:,2], label="After Dedispersion", alpha=0.75)
+            ax.legend()
+            plt.savefig(f"../test-dedispersion-{evt}.png", dpi=300)
+            wf_int.use_debug = old_debug
+
 
         rms[:, evt] = np.nanstd(wf_int.pad_v, axis = 0)
     del ara_root, num_ants, wf_int
