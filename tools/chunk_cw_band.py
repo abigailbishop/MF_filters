@@ -74,7 +74,7 @@ def cw_band_collector(Data, Station, Run, analyze_blind_dat = False, no_tqdm = F
     del cw_sigma, cw_phase, cw_testbed, num_evts, daq_qual_cut, cw_freq
 
     # to numpy array
-    bad_range = np.asarray(bad_range)
+    bad_range = np.asarray(bad_range, dtype=object)
 
     print('cw band collecting is done!')
 

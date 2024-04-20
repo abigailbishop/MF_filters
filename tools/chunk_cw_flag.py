@@ -139,9 +139,9 @@ def cw_flag_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_t
     pbar.close()
 
     # to numpy array
-    sigma = np.asarray(sigma)
-    phase_idx = np.asarray(phase_idx)
-    testbed_idx = np.asarray(testbed_idx)
+    sigma = np.asarray(sigma, dtype=object)
+    phase_idx = np.asarray(phase_idx, dtype=object)
+    testbed_idx = np.asarray(testbed_idx, dtype=object)
 
     # group bad frequency
     cw_freq = group_bad_frequency(st, run, freq_range, verbose = True) # constructor for bad frequency grouping function
@@ -163,7 +163,7 @@ def cw_flag_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_t
     del num_evts, daq_qual_cut_sum, cw_freq
 
     # to numpy array
-    bad_range = np.asarray(bad_range)
+    bad_range = np.asarray(bad_range, dtype=object)
  
     blind_type = ''
     if analyze_blind_dat:
