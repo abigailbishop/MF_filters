@@ -282,9 +282,9 @@ class ara_raytrace_loader:
             print('ice model:', self.ice_model)
 
         # header
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_UTIL_INSTALL_DIR')+'/../AraSim/RayTrace.h"')
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_UTIL_INSTALL_DIR')+'/../AraSim/RayTrace_IceModels.h"')
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_UTIL_INSTALL_DIR')+'/../AraSim/Vector.h"')
+        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace.h"')
+        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace_IceModels.h"')
+        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/Vector.h"')
 
         # attenuation & exponential model
         if self.use_bulk_ice:
