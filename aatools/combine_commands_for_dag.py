@@ -1,5 +1,5 @@
 def make_shell_script(
-    file_name, key, station, runs, 
+    file_name, keys, station, runs, 
     blind_dat=1, condor_run=0, not_override=0, qual_type=1,
     l2_data=0, no_tqdm=0, include_qual_cut=True
 ): 
@@ -27,16 +27,17 @@ def make_shell_script(
         commands.append(
             fr'printf "\tRunning script for run {run} ({i+1}/{len(runs)})"'
         )
-        commands.append(rf'printf "\n{squiggles}\n"')
-        commands.append(rf'printf "Running script for {key}\n"')
-        commands.append(
-            f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
-            f"-k {key} -s {station} -r {run} -b {blind_dat} "
-            f"-c {condor_run} -n {not_override} -q {qual_type} "
-            f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
-        )
-        commands.append(rf'printf "Done!\n\n\n"')
-        commands.append(rf'printf "\n"')
+        for key in keys: 
+            commands.append(rf'printf "\n{squiggles}\n"')
+            commands.append(rf'printf "Running script for {key}\n"')
+            commands.append(
+                f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
+                f"-k {key} -s {station} -r {run} -b {blind_dat} "
+                f"-c {condor_run} -n {not_override} -q {qual_type} "
+                f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
+            )
+            commands.append(rf'printf "Done!\n\n\n"')
+            commands.append(rf'printf "\n"')
         commands.append(rf'printf "\n"')
         commands.append("")
 
@@ -60,7 +61,7 @@ def main():
         help="Absolute path to the directory where new shell scripts will be saved.")
     parser.add_argument('station', type=int,
         help="Number of the ARA station")
-    parser.add_argument('key', type=str,
+    parser.add_argument('-k', '--keys', type=str, nargs="*",
         help="key corresponding to the script called by script_executor.py")
     parser.add_argument('--first_run', type=int, default = 0,
         help="First run being analyzed")
@@ -75,13 +76,19 @@ def main():
     parser.add_argument('--l2_data', type=int, default=0)
     parser.add_argument('--no_tqdm', type=int, default=0)
     parser.add_argument('--include_qual_cut', type=bool, default=True)
+    parser.add_argument('--missing_from_dir', default="", type=str)
 
     args = parser.parse_args()
 
-    from find_missing_outputs import get_runs_from_runlist
-
-    input_runs = get_runs_from_runlist(
-        args.runlist, args.first_run, args.last_run)
+    if args.missing_from_dir: 
+        from find_missing_outputs import find_missing_outputs
+        input_runs = find_missing_outputs(
+            args.runlist, args.missing_from_dir, 
+            first_run=args.first_run, last_run=args.last_run)
+    else: 
+        from find_missing_outputs import get_runs_from_runlist
+        input_runs = get_runs_from_runlist(
+            args.runlist, args.first_run, args.last_run)
     
     split_runs = [
         input_runs[ i*args.runs_per_job : (i+1)*args.runs_per_job ]
@@ -93,7 +100,7 @@ def main():
 
     for i, runs in enumerate(split_runs): 
         make_shell_script(
-            f"{args.output_dir}/job{i}.sh", args.key, args.station, runs,
+            f"{args.output_dir}/job{i}.sh", args.keys, args.station, runs,
             blind_dat=args.blind_dat, condor_run=args.condor_run, 
             not_override=args.not_override, qual_type=args.qual_type,
             l2_data=args.l2_data, no_tqdm=args.no_tqdm, 
