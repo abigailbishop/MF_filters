@@ -1,6 +1,6 @@
 def make_shell_script(
     file_name, keys, station, runs, 
-    blind_dat=1, condor_run=0, not_override=0, qual_type=1,
+    blind_dat=1, condor_run=0, not_override=0, 
     l2_data=0, no_tqdm=0, include_qual_cut=True
 ): 
 
@@ -30,6 +30,7 @@ def make_shell_script(
         for key in keys: 
             commands.append(rf'printf "\n{squiggles}\n"')
             commands.append(rf'printf "Running script for {key}\n"')
+            qual_type = int(key[-3]) if "qual_cut" in key else 1
             commands.append(
                 f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
                 f"-k {key} -s {station} -r {run} -b {blind_dat} "
@@ -72,7 +73,6 @@ def main():
     parser.add_argument('--blind_dat', type=int, default=1)
     parser.add_argument('--condor_run', type=int, default=0)
     parser.add_argument('--not_override', type=int, default=0)
-    parser.add_argument('--qual_type', type=int, default=1)
     parser.add_argument('--l2_data', type=int, default=0)
     parser.add_argument('--no_tqdm', type=int, default=0)
     parser.add_argument('--include_qual_cut', type=bool, default=True)
@@ -102,7 +102,7 @@ def main():
         make_shell_script(
             f"{args.output_dir}/job{i}.sh", args.keys, args.station, runs,
             blind_dat=args.blind_dat, condor_run=args.condor_run, 
-            not_override=args.not_override, qual_type=args.qual_type,
+            not_override=args.not_override, 
             l2_data=args.l2_data, no_tqdm=args.no_tqdm, 
             include_qual_cut=args.include_qual_cut
         )
