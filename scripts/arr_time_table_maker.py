@@ -13,7 +13,7 @@ def arr_time_table_loader(Station = None):
     print('Collecting arrival time starts!')
 
     # arasim raytracer
-    ara_ray = ara_raytrace_loader(n0 = 1.35, nf = 1.78, l = 0.0132, verbose = True)
+    ara_ray = ara_raytrace_loader(n0 = 1.326, nf = 1.78, l = 0.0202, verbose = True) #values for PA ice model
 
     # get posisiton for vertex and antenna
     radius_bin = np.array([41, 170, 300, 450, 600])
