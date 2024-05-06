@@ -677,29 +677,50 @@ class batch_info_loader:
         return run_list, dat_list_new, bad_run_list, bad_dat_list, dupl_run_list, dupl_dat_list
 
 def file_sorter(d_path):
+    """
+    Sort files in the path following characteristics and wildcards presented in 
+      the provided path.
 
-    # data path
-    d_list_chaos = glob(d_path)
-    d_len = len(d_list_chaos)
+    Parameters
+    ----------
+    d_path : str
+        The path (with wildcard characters) to pull files from
+        example: "/data/ana/ARA0{Station}/sub_info{burn_key}/*"
+
+    Returns
+    -------
+    d_list : list
+        List of files that match the provided `d_path` parameter, sorted by run.
+    run_tot : np.array 
+        Sorted list of run numbers represented by the files in `d_path`.
+    run_range : np.array
+        Sorted list of all run numbers from `run_tot[0]` to `run_tot[-1]`. This
+          assumes that all runs have data available and none are skipped/missing.
+    d_len : int
+        Number of files that match the provided `d_path` parameter.
+    """
+
+    # Parse the data in the provided d_path
+    d_list_chaos = glob(d_path) # list of files matching d_path
+    d_len = len(d_list_chaos)   # number of files matching d_path
     print('Total Runs:',d_len)
 
-    # make run list
+    # extract run numbers from file names
     run_tot=np.full((d_len),-1,dtype=int)
     aa = 0
-
     i_key = '_R'
     i_key_len = len(i_key)
     for d in d_list_chaos:
         i_idx = d.find(i_key)
         f_idx = d.find('.', i_idx + i_key_len)        
-        run_tot[aa] = int(d[i_idx + i_key_len:f_idx])
+        run_tot[aa] = int(d[i_idx + i_key_len:f_idx]) 
         aa += 1
     del aa
 
-    # sort the run and path
-    run_index = np.argsort(run_tot)
-    run_tot = run_tot[run_index]
-    d_list = []
+    # Get list of runs and files sorted by run number
+    run_index = np.argsort(run_tot) # list of indices in run_tot that yeild a sorted run_tot
+    run_tot = run_tot[run_index]    # Run numbers sorted by run number
+    d_list = []                     # File names sorted by run number
     for d in range(d_len):
         d_list.append(d_list_chaos[run_index[d]])
     del d_list_chaos, run_index
