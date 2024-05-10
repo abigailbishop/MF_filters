@@ -77,6 +77,7 @@ def main():
     parser.add_argument('--no_tqdm', type=int, default=0)
     parser.add_argument('--include_qual_cut', type=bool, default=True)
     parser.add_argument('--missing_from_dir', default="", type=str)
+    parser.add_argument('--full_pipeline', action="store_true")
 
     args = parser.parse_args()
 
@@ -98,9 +99,20 @@ def main():
     ]
     print(f"Making {len(split_runs)} shells scripts for {len(input_runs)} jobs.")
 
+    if args.full_pipeline: 
+        keys = [
+            'sub_info', 'qual_cut_1st', 'ped', 'baseline', 
+            'cw_flag', 'cw_band', 'cw_ratio', 'qual_cut_2nd',
+            'ped', 'rayl', 'rayl_nb', 'snr', 
+            'reco_ele_lite', 'rpr', 'vertex', 'mf', 'qual_cut_3rd',
+            'sub_info_burn'
+        ]
+    else: 
+        keys = args.keys
+
     for i, runs in enumerate(split_runs): 
         make_shell_script(
-            f"{args.output_dir}/job{i}.sh", args.keys, args.station, runs,
+            f"{args.output_dir}/job{i}.sh", keys, args.station, runs,
             blind_dat=args.blind_dat, condor_run=args.condor_run, 
             not_override=args.not_override, 
             l2_data=args.l2_data, no_tqdm=args.no_tqdm, 
