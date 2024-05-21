@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import h5py
+import os, sys
 
 def vertex_collector(st, run, analyze_blind_dat = False, no_tqdm = False):
 
@@ -67,7 +68,17 @@ def vertex_collector(st, run, analyze_blind_dat = False, no_tqdm = False):
 
         # get vertex reco
         #print(handler.pair_info, handler.useful_num_ants)
+
+        # # Commented lines suppress warnings output from Minuit about not
+        # #   solving the spherical fit 
+        # save = os.dup(sys.stdout.fileno()) 
+        # newout = open('.stdout.out', 'w') 
+        # os.dup2(newout.fileno(), sys.stdout.fileno()) 
         vertex.get_pair_fit_spherical(handler.pair_info, handler.useful_num_ants)
+        # os.dup2(save, sys.stdout.fileno()) 
+        # os.remove(".stdout.out")
+        # newout.close()
+        
         theta[:, evt] = vertex.theta
         phi[:, evt] = vertex.phi
         r[:, evt] = vertex.R
