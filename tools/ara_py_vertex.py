@@ -171,6 +171,38 @@ class py_ara_vertex:
         self.reco.printPairs()
 
     def get_pair_fit_spherical(self, pair_info, useful_num_ants):
+        """
+        Using the Minuit Simplex minimizer, estimate an event's vertex 
+          (in spherical coordinate space)
+
+        Additional Information
+        ----------------------
+        This prepares for and calls the `doPairFitSpherical` function defined 
+          in AraRoot's AraVertex script. This function first fixes theta and 
+          phi ("according to track engine") and optimizes R. Next, it 
+          uses the best fit for R as a basis for minimizing R, theta, and phi. 
+          Information from the fit and calculated after the fit is returned in
+          an `AraVertex::RECOOUT` struct with the following attributes (and
+          more, this is a limited list): 
+            R (dX)      : Calculated, reconstructed radial distance to vertex 
+                            (and error)
+            theta (dY)  : Calculated zenith of vertex (and error)
+            phi (dZ)    : Calculated azimuth of vertex (and error)
+            Status      : no idea
+            Edm         : also no idea
+            chisq       : Chi squared value for the fit
+            nhits       : also also no idea
+            X           : Cartesian X coordinate of the reconstruction
+            Y           : Cartesian Y coordinate of the reconstruction
+            Z           : Cartesian Z coordinate of the reconstruction
+            dt          : Time difference (ns) / tra
+
+
+        Sources
+        -------
+        [1] : 
+        [2] : 
+        """
 
         self.theta = np.full((num_pols_com), np.nan, dtype = float) 
         self.phi = np.copy(self.theta)
