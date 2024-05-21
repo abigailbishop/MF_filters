@@ -13,6 +13,7 @@ def arr_time_table_loader(Station = None):
     print('Collecting arrival time starts!')
 
     # arasim raytracer
+    #ara_ray = ara_raytrace_loader(n0 = 1.35, nf = 1.78, l = 0.0132, verbose = True)
     ara_ray = ara_raytrace_loader(n0 = 1.326, nf = 1.78, l = 0.0202, verbose = True) #values for PA ice model
 
     # get posisiton for vertex and antenna
@@ -27,7 +28,7 @@ def arr_time_table_loader(Station = None):
     print(f'Output path check:{Output}')
     if not os.path.exists(Output):
         os.makedirs(Output)
-    h5_file_name = f'{Output}arr_time_table_A{Station}_all.h5'
+    h5_file_name = f'{Output}arr_time_table_A{Station}_original_3radii.h5'#_all.h5'
     hf = h5py.File(h5_file_name, 'w')
     
     #saving result
