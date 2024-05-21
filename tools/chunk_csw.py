@@ -88,7 +88,7 @@ def csw_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm 
         # loop over the antennas
         for ant in range(num_ants):
             raw_t, raw_v = ara_root.get_rf_ch_wf(ant)
-            wf_int.get_int_wf(raw_t, raw_v, ant, use_zero_pad = False, use_band_pass = True, use_cw = True, evt = evt, dedisperse = dedisperse)
+            wf_int.get_int_wf(raw_t, raw_v, ant, use_zero_pad = False, use_band_pass = True, use_cw = True, evt = evt)
             del raw_t, raw_v
             ara_root.del_TGraph()
         ara_root.del_usefulEvt()
