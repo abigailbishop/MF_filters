@@ -9,12 +9,12 @@ export HDF5_USE_FILE_LOCKING='FALSE'
 source /cvmfs/ara.opensciencegrid.org/trunk/centos7/setup.sh
 
 export RAW_PATH=/data/exp/ARA
-export OUTPUT_PATH=/data/user/alansalgo/analysisA23
+#export OUTPUT_PATH=/data/user/alansalgo/analysisA23
+export OUTPUT_PATH=/data/ana/ARA #uncomment to write to /data/ana/ARA
 
-#export ARA_UTIL_INSTALL_DIR=/cvmfs/ara.opensciencegrid.org/trunk/RHEL_7_x86_64/ara_build
 export ARA_UTIL_INSTALL_DIR=/home/mkim/analysis/AraSoft/AraUtil
 export ARA_ROOT_DIR=/cvmfs/ara.opensciencegrid.org/trunk/RHEL_7_x86_64/source/AraRoot
-export ARA_SIM_DIR=/home/source/AraSim
+export ARA_SIM_DIR=/home/alansalgo/source/AraSim
 export GTRS_DIR=
 export LD_LIBRARY_PATH=${ARA_UTIL_INSTALL_DIR}/lib:$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=${ARA_SIM_DIR}:$LD_LIBRARY_PATH
