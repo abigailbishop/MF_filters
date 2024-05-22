@@ -2,7 +2,9 @@ import numpy as np
 from tqdm import tqdm
 import h5py
 
-def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm = False):
+def reco_ele_lite_collector(
+    Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm = False
+):
 
     print('Collecting reco ele lite starts!')
 
@@ -47,7 +49,13 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
 
     # pre quality cut
     if use_l2 == False:
-        daq_qual_cut_sum = get_bad_events(st, run, analyze_blind_dat = analyze_blind_dat, verbose = True, evt_num = evt_num, qual_type = 2)[0]
+        daq_qual_cut_sum = get_bad_events(
+            st, run, 
+            analyze_blind_dat = analyze_blind_dat, 
+            verbose = True, 
+            evt_num = evt_num, 
+            qual_type = 2
+        )[0]
 
     known_issue = known_issue_loader(st)
     bad_ant = known_issue.get_bad_antenna(run, print_integer = True)
@@ -61,7 +69,10 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
     evt_num_b = np.full((10), -1, dtype = int)
     if analyze_blind_dat:
         print('BURN!!!!!')
-        reco_dat = run_info.get_result_path(file_type = 'reco_ele_lite', verbose = True, return_none = True, force_unblind = True)
+        reco_dat = run_info.get_result_path(
+            file_type = 'reco_ele_lite', 
+            verbose = True, return_none = True, force_unblind = True
+        )
         if reco_dat is not None:
             reco_hf = h5py.File(reco_dat, 'r')
             evt_num_b = reco_hf['evt_num'][:]
@@ -75,10 +86,18 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
     del wei_dat, wei_hf, run_info
 
     # wf analyzer
-    wf_int = wf_analyzer(use_time_pad = True, use_band_pass = True, use_cw = True, verbose = True, use_l2 = use_l2, analyze_blind_dat = analyze_blind_dat, st = st, run = run)
+    wf_int = wf_analyzer(
+        use_time_pad = True, use_band_pass = True, use_cw = True, 
+        verbose = True, use_l2 = use_l2, analyze_blind_dat = analyze_blind_dat, 
+        st = st, run = run
+    )
 
     # interferometers
-    ara_int = py_interferometers(wf_int.pad_len, wf_int.dt, st, run = run, get_sub_file = True, verbose = True, use_only_max = analyze_blind_dat)
+    ara_int = py_interferometers(
+        wf_int.pad_len, wf_int.dt, 
+        st, run = run, 
+        get_sub_file = True, verbose = True, use_only_max = analyze_blind_dat
+    )
     only_max = ara_int.use_only_max
     if only_max:
         num_angs = ara_int.num_angs
@@ -91,11 +110,14 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
 
     # output array 
     if only_max: 
-        coef_cal = np.full((num_pols, num_evts), np.nan, dtype = float) # pol, evt
-        coord_cal = np.full((num_angs + 1, num_pols, num_evts), np.nan, dtype = float) # thepiz, pol, evt 
-        coef_max = np.copy(coef_cal) # pol, evt
-        coord_max = np.full((num_angs + 2, num_pols, num_evts), np.nan, dtype = float) # thepirz, pol, evt
-        coef_s_max = np.copy(coef_cal) # pol, evt
+        coef_cal    = np.full( (num_pols, num_evts), 
+                               np.nan, dtype = float ) # pol, evt
+        coord_cal   = np.full( (num_angs + 1, num_pols, num_evts), 
+                               np.nan, dtype = float ) # thepiz, pol, evt 
+        coef_max    = np.copy(coef_cal) # pol, evt
+        coord_max   = np.full( (num_angs + 2, num_pols, num_evts), 
+                               np.nan, dtype = float ) # thepirz, pol, evt
+        coef_s_max  = np.copy(coef_cal) # pol, evt
         coord_s_max = np.copy(coord_max) # thepirz, pol, evt
         del num_angs
         if reco_dat is not None:
@@ -114,7 +136,10 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
             del coef_cal_b, coord_cal_b, coef_max_b, coord_max_b, coef_s_max_b, coord_s_max_b
         del reco_dat
     else:
-        coef = np.full((re_shape[0], re_shape[1], re_shape[2], re_shape[3], num_evts), np.nan, dtype = float) # pol, theta, rad, ray, evt
+        coef = np.full(
+            (re_shape[0], re_shape[1], re_shape[2], re_shape[3], num_evts), 
+            np.nan, dtype = float
+        ) # pol, theta, rad, ray, evt
         coord = np.copy(coef) # pol, theta, rad, ray, evt
         del re_shape
     del num_pols
@@ -135,7 +160,11 @@ def reco_ele_lite_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False
         # loop over the antennas
         for ant in range(num_ants):
             raw_t, raw_v = ara_root.get_rf_ch_wf(ant)
-            wf_int.get_int_wf(raw_t, raw_v, ant, use_zero_pad = True, use_band_pass = True, use_cw = True, evt = evt)
+            wf_int.get_int_wf(
+                raw_t, raw_v, ant, 
+                use_zero_pad = True, use_band_pass = True, 
+                evt = evt
+            )
             del raw_t, raw_v
             ara_root.del_TGraph()
         ara_root.del_usefulEvt()   

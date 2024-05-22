@@ -21,7 +21,8 @@ def arr_time_table_loader(Station = None):
     ara_ray.get_src_trg_position(Station, 2016, radius_bin = radius_bin)
 
     # arrival time table
-    path_len, arr_time_table, launch_ang, receipt_ang, reflection_ang, miss, attenuation = ara_ray.get_arrival_time_table() 
+    ( path_len, arr_time_table, launch_ang, receipt_ang, reflection_ang, 
+      miss, attenuation ) = ara_ray.get_arrival_time_table() 
  
     # create output dir
     Output = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{Station}/arr_time_table/'

@@ -269,7 +269,8 @@ class ara_root_loader:
 # kahughes@uchicago.edu
 class ara_raytrace_loader:
 
-    def __init__(self, n0 = 1.35, nf = 1.78, l = 0.0132, n_bulk = 1.5, use_bulk_ice = False, verbose = False):
+    def __init__(self, n0 = 1.35, nf = 1.78, l = 0.0132, n_bulk = 1.5, 
+                 use_bulk_ice = False, verbose = False):
 
         self.use_bulk_ice = use_bulk_ice
         self.verbose = verbose
@@ -282,24 +283,38 @@ class ara_raytrace_loader:
             print('ice model:', self.ice_model)
 
         # header
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace.h"')
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace_IceModels.h"')
-        self.ara_sim.gInterpreter.ProcessLine('#include "'+os.environ.get('ARA_SIM_DIR')+'/Vector.h"')
+        self.ara_sim.gInterpreter.ProcessLine(
+            '#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace.h"')
+        self.ara_sim.gInterpreter.ProcessLine(
+            '#include "'+os.environ.get('ARA_SIM_DIR')+'/RayTrace_IceModels.h"')
+        self.ara_sim.gInterpreter.ProcessLine(
+            '#include "'+os.environ.get('ARA_SIM_DIR')+'/Vector.h"')
 
         # attenuation & exponential model
         if self.use_bulk_ice:
-            self.ara_sim.gInterpreter.ProcessLine(f'auto refr_model = boost::shared_ptr<constantRefractiveIndex>(new constantRefractiveIndex({n_bulk}));')
+            self.ara_sim.gInterpreter.ProcessLine(
+                f'auto refr_model = boost::shared_ptr<constantRefractiveIndex>(new constantRefractiveIndex({n_bulk}));')
         else:
-            self.ara_sim.gInterpreter.ProcessLine(f'auto refr_model = boost::shared_ptr<exponentialRefractiveIndex>(new exponentialRefractiveIndex({n0},{nf},{l}));')
-        self.ara_sim.gInterpreter.ProcessLine('auto atten_model = boost::shared_ptr<basicAttenuationModel>( new basicAttenuationModel );')
+            self.ara_sim.gInterpreter.ProcessLine(
+                f'auto refr_model = boost::shared_ptr<exponentialRefractiveIndex>(new exponentialRefractiveIndex({n0},{nf},{l}));')
+        self.ara_sim.gInterpreter.ProcessLine(
+            'auto atten_model = boost::shared_ptr<basicAttenuationModel>( new basicAttenuationModel );')
 
         # link ray tracing model
-        self.ara_sim.gInterpreter.ProcessLine('RayTrace::TraceFinder tf(refr_model, atten_model);')
+        self.ara_sim.gInterpreter.ProcessLine(
+            'RayTrace::TraceFinder tf(refr_model, atten_model);')
 
         # link ray trace output format
-        self.ara_sim.gInterpreter.ProcessLine('Vector src; Vector rec; std::vector<RayTrace::TraceRecord> paths;')
+        self.ara_sim.gInterpreter.ProcessLine(
+            'Vector src; Vector rec; std::vector<RayTrace::TraceRecord> paths;')
 
-    def get_src_trg_position(self, st, yrs, theta_bin = np.linspace(0.5, 179.5, 179 + 1), phi_bin = np.linspace(-179.5, 179.5, 359 + 1), radius_bin = np.array([41,300]), num_ray_sol = np.array([1, 2], dtype = int), debug = False):
+    def get_src_trg_position(
+        self, st, yrs,
+        theta_bin = np.linspace(0.5, 179.5, 179 + 1), 
+        phi_bin = np.linspace(-179.5, 179.5, 359 + 1), 
+        radius_bin = np.array([41,300]),
+        num_ray_sol = np.array([1, 2], dtype = int), debug = False
+    ):
 
         from tools.ara_data_load import ara_geom_loader
         ara_geom = ara_geom_loader(st, yrs)
@@ -319,13 +334,25 @@ class ara_raytrace_loader:
         theta_radian = np.radians(self.theta_bin)
         phi_radian = np.radians(self.phi_bin)
 
-        r_4d = np.tile(self.radius_bin[np.newaxis, np.newaxis, :, np.newaxis], (len(self.theta_bin), len(self.phi_bin), len(self.num_ray_sol), num_ants))
-        x_4d = r_4d * np.sin(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis] * np.cos(phi_radian)[np.newaxis, :, np.newaxis, np.newaxis]
-        y_4d = r_4d * np.sin(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis] * np.sin(phi_radian)[np.newaxis, :, np.newaxis, np.newaxis]
-        z_4d = r_4d * np.cos(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis]
+        r_4d = np.tile(
+            self.radius_bin[np.newaxis, np.newaxis, :, np.newaxis], 
+            (len(self.theta_bin), len(self.phi_bin), 
+             len(self.num_ray_sol), num_ants)
+        )
+        x_4d = ( r_4d 
+                 * np.sin(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis]
+                 * np.cos(phi_radian)[np.newaxis, :, np.newaxis, np.newaxis]   )
+        y_4d = ( r_4d 
+                 * np.sin(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis] 
+                 * np.sin(phi_radian)[np.newaxis, :, np.newaxis, np.newaxis]   )
+        z_4d = ( r_4d 
+                 * np.cos(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis] )
         del theta_radian, phi_radian
 
-        self.trg_r = np.sqrt((x_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 0, :])**2 + (y_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 1, :])**2)
+        self.trg_r = np.sqrt(
+            (x_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 0, :])**2 
+            + (y_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 1, :])**2
+        )
         self.trg_z = np.copy(self.ant_pos[2])
 
         self.src_r = np.full((1), 0, dtype = float)
@@ -351,7 +378,10 @@ class ara_raytrace_loader:
         sol_err = ctypes.c_int()
 
         #raytracing
-        self.ara_sim.paths = self.ara_sim.tf.findPaths(self.ara_sim.rec, self.ara_sim.src, 0.3, self.ara_sim.TMath.Pi()/2, sol_cnt, sol_err, 1, 0.2)
+        self.ara_sim.paths = self.ara_sim.tf.findPaths(
+            self.ara_sim.rec, self.ara_sim.src, 0.3, 
+            self.ara_sim.TMath.Pi()/2, sol_cnt, sol_err, 1, 0.2
+        )
         del sol_cnt, sol_err
 
         path_len = np.full((len(self.num_ray_sol)), np.nan, dtype = float)
@@ -372,16 +402,27 @@ class ara_raytrace_loader:
             miss[sol_num] = sol.miss
             attenuation[sol_num] = sol.attenuation
             if debug and self.verbose:
-                print(f'Path time: {sol.pathTime*1e9} ns, Path length: {sol.pathLen} m, Attenuation: {sol.attenuation} m, Miss: {sol.miss} m')
+                print( f"Path time: {sol.pathTime*1e9} ns,",
+                       f"Path length: {sol.pathLen} m,",
+                       f"Attenuation: {sol.attenuation} m,",
+                       f"Miss: {sol.miss} m" )
             if sol_num == 0 and self.use_bulk_ice == True:
                 break
             sol_num += 1
             
-        return path_len, path_time, launch_ang, receipt_ang, reflection_ang, miss, attenuation
+        return ( path_len, path_time, launch_ang, receipt_ang, reflection_ang, 
+                 miss, attenuation )
 
     def get_arrival_time_table(self, debug = False):
 
-        path_len = np.full((len(self.theta_bin), len(self.phi_bin), len(self.radius_bin), num_ants, len(self.num_ray_sol)), np.nan, dtype = float)
+        path_len = np.full(
+            ( len(self.theta_bin), 
+              len(self.phi_bin), 
+              len(self.radius_bin), 
+              num_ants, 
+              len(self.num_ray_sol) ), 
+            np.nan, dtype = float
+        )
         path_time = np.copy(path_len)
         launch_ang = np.copy(path_len)
         receipt_ang = np.copy(path_len)
@@ -397,9 +438,17 @@ class ara_raytrace_loader:
                 for r in range (len(self.radius_bin)):
                     for a in range(num_ants):
 
-                        path_len[t, p, r, a], path_time[t, p, r, a], launch_ang[t, p, r, a], receipt_ang[t, p, r, a], reflection_ang[t, p, r, a], miss[t, p, r, a], attenuation[t, p, r, a] = self.get_ray_solution(self.trg_r[t, p, r, a], self.src_z[t, p, r, a], self.trg_z[a], debug = debug)
+                        ( path_len[t, p, r, a], path_time[t, p, r, a], 
+                          launch_ang[t, p, r, a], receipt_ang[t, p, r, a], 
+                          reflection_ang[t, p, r, a], 
+                          miss[t, p, r, a], attenuation[t, p, r, a] ) \
+                        = self.get_ray_solution(
+                            self.trg_r[t, p, r, a], self.src_z[t, p, r, a], 
+                            self.trg_z[a], debug = debug
+                        )
 
-        return path_len, path_time, launch_ang, receipt_ang, reflection_ang, miss, attenuation
+        return ( path_len, path_time, launch_ang, receipt_ang, reflection_ang, 
+                 miss, attenuation )
 
 
 

@@ -18,7 +18,11 @@ num_pols = ara_const.POLARIZATION
 
 class py_interferometers:
 
-    def __init__(self, pad_len, dt, st, run = None, get_sub_file = False, use_debug = False, verbose = False, use_only_max = False):
+    def __init__(
+        self, pad_len, dt, st, 
+        run = None, get_sub_file = False, use_debug = False, 
+        verbose = False, use_only_max = False
+    ):
 
         self.verbose = verbose
         self.dt = dt
@@ -31,9 +35,11 @@ class py_interferometers:
 
         if get_sub_file:
             self.get_zero_pad(pad_len)
-            self.lags = correlation_lags(self.double_pad_len, self.double_pad_len, 'same') * self.dt
+            self.lags = correlation_lags(
+                self.double_pad_len, self.double_pad_len, 'same') * self.dt
             self.lag_len = len(self.lags)
-            self.pairs, self.pair_len, self.v_pairs_len = get_pair_info(self.st, self.run, verbose = self.verbose)
+            self.pairs, self.pair_len, self.v_pairs_len = get_pair_info(
+                self.st, self.run, verbose = self.verbose)
             self.pair_range = np.arange(self.pair_len, dtype = int)
             self.get_arrival_time_tables()
             self.get_coval_time()
@@ -82,7 +88,9 @@ class py_interferometers:
             self.z_cal = np.sin(np.radians(self.theta)) * float(self.radius[0])
 
             flat_len = self.num_thetas * self.num_rads * self.num_rays
-            theta_ex = np.full((self.num_thetas, self.num_rads, self.num_rays), np.nan, dtype = float)
+            theta_ex = np.full(
+                (self.num_thetas, self.num_rads, self.num_rays), 
+                np.nan, dtype = float)
             theta_ex[:] = self.theta[:, np.newaxis, np.newaxis]
             self.theta_flat = np.reshape(theta_ex, (flat_len))
             rad_ex = np.full(theta_ex.shape, np.nan, dtype = float)
@@ -92,7 +100,9 @@ class py_interferometers:
             del theta_ex, rad_ex
 
             sur_ang = np.array([180, 180, 37, 24, 17], dtype = float)
-            theta_map = np.full((self.num_pols, self.num_thetas, self.num_rads, self.num_rays), np.nan, dtype = float)
+            theta_map = np.full(
+                (self.num_pols, self.num_thetas, self.num_rads, self.num_rays), 
+                np.nan, dtype = float)
             theta_map[:] = self.theta[np.newaxis, :, np.newaxis, np.newaxis]
             sur_bool = theta_map <= sur_ang[np.newaxis, np.newaxis, :, np.newaxis]
             self.sur_bool_flat = np.reshape(sur_bool, (self.num_pols, flat_len))
@@ -107,20 +117,31 @@ class py_interferometers:
         minus_arr = np.logical_or(table_p1 < -100, table_p2 < -100) # minus arrival time. there must be error in ray tracing
         self.table[minus_arr] = np.nan
         partial_ray = np.any(np.isnan(self.table), axis = 4) # not all the channel pair has ray solution
-        partial_ray_ex = np.repeat(partial_ray[:, :, :, :, np.newaxis], self.pair_len, axis = 4) # match table shape
+        partial_ray_ex = np.repeat(
+            partial_ray[:, :, :, :, np.newaxis], self.pair_len, axis = 4) # match table shape
         self.table[partial_ray_ex] = np.nan
         self.table_shape = self.table.shape # (theta, phi, ray, rad, pair)
-        self.sky_map_shape = (self.num_pols, self.num_thetas, self.num_phis, self.num_rads, self.num_rays)
-        self.results_shape = (self.num_pols, self.num_thetas, self.num_rads, self.num_rays)
+        self.sky_map_shape = (self.num_pols, self.num_thetas, self.num_phis, 
+                              self.num_rads, self.num_rays)
+        self.results_shape = (self.num_pols, self.num_thetas, 
+                              self.num_rads, self.num_rays)
         del table_p1, table_p2, minus_arr, partial_ray, partial_ray_ex
 
         # bad!
         self.bad_coval = np.isnan(self.table)
         self.bad_sky = np.full(self.sky_map_shape, False, dtype = bool)
-        self.bad_sky[0, :, :, :, :2] = np.all(np.isnan(self.table[:, :, :, :, :self.v_pairs_len]), axis = 4)
-        self.bad_sky[1, :, :, :, :2] = np.all(np.isnan(self.table[:, :, :, :, self.v_pairs_len:]), axis = 4)
-        self.bad_sky[0, :, :, :, 2] = np.all(self.bad_sky[0, :, :, :, :2], axis = 3) 
-        self.bad_sky[1, :, :, :, 2] = np.all(self.bad_sky[1, :, :, :, :2], axis = 3)
+        self.bad_sky[0, :, :, :, :2] = np.all(
+            np.isnan(self.table[:, :, :, :, :self.v_pairs_len]), 
+            axis = 4)
+        self.bad_sky[1, :, :, :, :2] = np.all(
+            np.isnan(self.table[:, :, :, :, self.v_pairs_len:]), 
+            axis = 4)
+        self.bad_sky[0, :, :, :, 2] = np.all(
+            self.bad_sky[0, :, :, :, :2], 
+            axis = 3) 
+        self.bad_sky[1, :, :, :, 2] = np.all(
+            self.bad_sky[1, :, :, :, :2], 
+            axis = 3)
         if self.verbose:
             print('arr table shape:', self.table_shape)
 
@@ -144,17 +165,31 @@ class py_interferometers:
     def get_coval_sample(self):
 
         ## coval (theta, phi, rad, ray, pair)
-        coval = np.diff(self.corr, axis = 0)[self.p0_idx, self.pair_range] * self.int_factor + self.corr[self.p0_idx, self.pair_range] 
+        coval = ( np.diff(self.corr, axis = 0)[self.p0_idx, self.pair_range] 
+                  * self.int_factor + self.corr[self.p0_idx, self.pair_range]  )
+
         coval[self.bad_coval] = np.nan # as mush as we claened table, it is time to clean results
         if self.use_debug:
             self.coval = np.copy(coval) # individual pairs sky map
 
         sky_map = np.full(self.sky_map_shape, np.nan, dtype = float) # array dim (# of pols, # of thetas, # of phis, # of rs, # of rays) 
-        sky_map[0, :, :, :, :2] = np.nansum(coval[:, :, :, :, :self.v_pairs_len], axis = 4)
-        sky_map[1, :, :, :, :2] = np.nansum(coval[:, :, :, :, self.v_pairs_len:], axis = 4)
+        sky_map[0, :, :, :, :2] = np.nansum( 
+            coval[:, :, :, :, :self.v_pairs_len], 
+            axis = 4
+        )
+        sky_map[1, :, :, :, :2] = np.nansum(
+            coval[:, :, :, :, self.v_pairs_len:], 
+            axis = 4
+        )
         sky_map[self.bad_sky] = np.nan # sum of all-nan slice is 0... not nan...
-        sky_map[0, :, :, :, 2] = np.nanmean(sky_map[0, :, :, :, :2], axis = 3) # d and r
-        sky_map[1, :, :, :, 2] = np.nanmean(sky_map[1, :, :, :, :2], axis = 3)
+        sky_map[0, :, :, :, 2] = np.nanmean(
+            sky_map[0, :, :, :, :2], 
+            axis = 3
+        ) # d and r
+        sky_map[1, :, :, :, 2] = np.nanmean(
+            sky_map[1, :, :, :, :2], 
+            axis = 3
+        )
         if self.use_debug:
             self.sky_map = np.copy(sky_map)
         del coval
@@ -162,7 +197,13 @@ class py_interferometers:
         sky_map[np.isnan(sky_map)] = -1
         coef_phi_max_idx = np.nanargmax(sky_map, axis = 2) # array dim (# of pols, # of thetas, (# of phis), # of rs, # of rays)
         self.coord_max_ele = self.phi[coef_phi_max_idx] # array dim (# of pols, # of thetas, (# of phis), # of rs, # of rays)
-        self.coef_max_ele = sky_map[self.pol_range[:, np.newaxis, np.newaxis, np.newaxis], self.theta_range[np.newaxis, :, np.newaxis, np.newaxis], coef_phi_max_idx, self.rad_range[np.newaxis, np.newaxis, :, np.newaxis], self.ray_range[np.newaxis, np.newaxis, np.newaxis, :]] # array dim (# of pols, # of thetas, (# of phis), # of rs, # of rays)
+        self.coef_max_ele = sky_map[
+            self.pol_range[:, np.newaxis, np.newaxis, np.newaxis], 
+            self.theta_range[np.newaxis, :, np.newaxis, np.newaxis], 
+            coef_phi_max_idx, 
+            self.rad_range[np.newaxis, np.newaxis, :, np.newaxis], 
+            self.ray_range[np.newaxis, np.newaxis, np.newaxis, :]
+        ] # array dim (# of pols, # of thetas, (# of phis), # of rs, # of rays)
         
         if self.use_only_max:
             coef = self.coef_max_ele[:, :, 0, 0] # pol, theta, (rad), (ray)
@@ -172,7 +213,8 @@ class py_interferometers:
             self.coef_cal[neg_idx] = np.nan
             del coef
 
-            self.coord_cal = np.full((self.num_angs + 1, self.num_pols), np.nan, dtype = float) # thepiz, pol
+            self.coord_cal = np.full( (self.num_angs + 1, self.num_pols), 
+                                      np.nan, dtype = float) # thepiz, pol
             self.coord_cal[0] = self.theta[coef_idx]
             self.coord_cal[1] = self.coord_max_ele[:, :, 0, 0][self.pol_range, coef_idx] # pol, theta, (rad), (ray)
             self.coord_cal[2] = self.z_cal[coef_idx]
@@ -181,8 +223,10 @@ class py_interferometers:
 
             coef_re = np.reshape(self.coef_max_ele, (self.num_pols,  -1))
             coord_re = np.reshape(self.coord_max_ele, (self.num_pols, -1))
-            self.coef_max = np.full((self.num_pols), np.nan, dtype = float) # pol, evt
-            self.coord_max = np.full((self.num_angs + 2, self.num_pols), np.nan, dtype = float) # thepirz, pol
+            self.coef_max = np.full( (self.num_pols), 
+                                     np.nan, dtype = float ) # pol, evt
+            self.coord_max = np.full( (self.num_angs + 2, self.num_pols), 
+                                      np.nan, dtype = float ) # thepirz, pol
             self.coef_s_max = np.copy(self.coef_max)
             self.coord_s_max = np.copy(self.coord_max)
             for t in range(2):
@@ -193,7 +237,8 @@ class py_interferometers:
                 coef_max1 = coef_re[self.pol_range, coef_max_idx] # pol
                 neg_idx = coef_max1 < 0
                 coef_max1[neg_idx] = np.nan
-                coord_max1 = np.full((self.num_angs + 2, self.num_pols), np.nan, dtype = float) # thepir, pol
+                coord_max1 = np.full( (self.num_angs + 2, self.num_pols), 
+                                      np.nan, dtype = float ) # thepir, pol
                 coord_max1[0] = self.theta_flat[coef_max_idx]
                 coord_max1[1] = coord_re[self.pol_range, coef_max_idx]
                 coord_max1[2] = self.rad_flat[coef_max_idx]
@@ -226,13 +271,21 @@ class py_interferometers:
     def get_cross_correlation(self):
 
         # fft correlation w/ multiple array at once
-        self.corr = fftconvolve(self.zero_pad[:, self.pairs[:, 0]], self.zero_pad[::-1, self.pairs[:, 1]], 'same', axes = 0)
+        self.corr = fftconvolve(
+            self.zero_pad[:, self.pairs[:, 0]], 
+            self.zero_pad[::-1, self.pairs[:, 1]], 
+            'same', axes = 0
+        )
         if self.use_debug:
             self.corr_nonorm = np.copy(self.corr)
 
         # normalization factor by wf weight
-        nor_fac = uniform_filter1d(self.zero_pad**2, size = self.double_pad_len, mode = 'constant', axis = 0) * self.double_pad_len_float
-        nor_fac = np.sqrt(nor_fac[::-1, self.pairs[:, 0]] * nor_fac[:, self.pairs[:, 1]])
+        nor_fac = uniform_filter1d(
+            self.zero_pad**2, 
+            size = self.double_pad_len, mode = 'constant', axis = 0
+        ) * self.double_pad_len_float
+        nor_fac = np.sqrt( nor_fac[::-1, self.pairs[:, 0]] 
+                           * nor_fac[:, self.pairs[:, 1]])
         self.corr /= nor_fac
         self.corr[np.isnan(self.corr) | np.isinf(self.corr)] = 0 # convert x/nan result
         if self.use_debug:
