@@ -42,6 +42,67 @@ class ara_csw:
             self.get_arrival_time_delay()
             self.get_zero_pad()
 
+    def get_coefs_coords(self, reco_file):
+        """
+        From the provided path, load this runs reconstruction results and
+          format properly for this script. 
+
+        Parameters
+        ----------
+        reco_file : str
+            Full path to h5 file output for this run's reconstruction results. 
+
+        Returns
+        -------
+        coefs : numpy.ndarray
+            Array containing correlation coefficient for different 
+              signal polarizations, reconstruction radii, ray solutions (D, R, 
+              D+R), and events in the run.
+            Shape: ( pols, rads, sols, evts )
+        coords : numpy.ndarray
+            Array containing values for zenith and azimuthal angles [in degrees]
+              corresponding to the highest correlation coefficient (the 
+              reconstruction with the highest confidence/likelihood) for each
+              signal polarization, reconstruction radius, ray solution, and event.
+            Shape: ( pols, [zenith, azimuth], rads, sols, evts )
+        """
+        
+        reco_hf = h5py.File(reco_file, 'r')
+
+        #(# of pols, # of thetas, # of rs, # of rays, # events)
+        coef_hf = reco_hf['coef'][:] # pol, rad, sol, evt # ASG: pol, theta, rad, ray, evt
+        coord_hf = reco_hf['coord'][:] # pol, tp, rad, sol, evt # ASG: pol, theta, rad, ray, evt
+
+        # For each polarization, theta, radius, and ray:
+        #   Get the index of phi that has the highest correlation coefficient
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        coef_theta_max_idx = np.nanargmax(coef_hf, axis = 1) 
+
+        best_coefs = np.array(coef_hf)[
+            np.arange(coef_hf.shape[0])[:, np.newaxis, np.newaxis, np.newaxis],
+            coef_theta_max_idx,
+            np.arange(coef_hf.shape[2])[np.newaxis, :, np.newaxis, np.newaxis],
+            np.arange(coef_hf.shape[3])[np.newaxis, np.newaxis, :, np.newaxis],
+            np.arange(coef_hf.shape[4])[np.newaxis, np.newaxis, np.newaxis, :],
+        ]
+
+        # For each polarization, theta, radius, and ray:
+        #   Get the value for phi with the greatest correlation value
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        best_thetas = np.array(reco_hf['theta'])[coef_theta_max_idx]
+        best_phis = np.array(coord_hf)[
+            np.arange(coord_hf.shape[0])[:, np.newaxis, np.newaxis, np.newaxis],
+            coef_theta_max_idx,
+            np.arange(coord_hf.shape[2])[np.newaxis, :, np.newaxis, np.newaxis],
+            np.arange(coord_hf.shape[3])[np.newaxis, np.newaxis, :, np.newaxis],
+            np.arange(coord_hf.shape[4])[np.newaxis, np.newaxis, np.newaxis, :],
+        ]
+        best_coords = np.stack( (best_thetas,best_phis), axis=1 )
+
+        reco_hf.close()
+
+        return best_coefs, best_coords
+
     def get_arrival_time_delay(self):
 
         table_path = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{self.st}/arr_time_table/arr_time_table_A{self.st}.h5'
@@ -58,14 +119,12 @@ class ara_csw:
 
         if self.sim_reco_path is None:
             run_info = run_info_loader(self.st, self.run, analyze_blind_dat = self.analyze_blind_dat)
-            reco_dat = run_info.get_result_path(file_type = 'reco', verbose = self.verbose)
+            reco_dat = run_info.get_result_path(file_type = 'reco_ele_lite', verbose = self.verbose)
         else:
             reco_dat = self.sim_reco_path
             if self.verbose:
                 print('reco path:', self.sim_reco_path)
-        reco_hf = h5py.File(reco_dat, 'r')
-        coef = reco_hf['coef'][:] # pol, rad, sol, evt
-        coord = reco_hf['coord'][:] # pol, tp, rad, sol, evt
+        coef, coord = self.get_coefs_coords(reco_dat)
         self.pol_range = np.arange(len(coef[:, 0, 0, 0]), dtype = int)
         self.sol_range = np.arange(len(coef[0, 0, :, 0]), dtype = int)
         evt_range = np.arange(len(coef[0, 0, 0, :]), dtype = int)
@@ -77,7 +136,12 @@ class ara_csw:
         coord_t = np.transpose(coord, (1, 0, 2, 3, 4))
         self.coord_r_max_idx = coord_t[tp_range[:, np.newaxis, np.newaxis, np.newaxis], self.pol_range[np.newaxis, :, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, np.newaxis, :]]
         self.coord_r_max_idx  = np.transpose(self.coord_r_max_idx, (1, 0, 2, 3))
-        self.coord_r_max_idx = self.coord_r_max_idx[:2]
+
+        # Instruct code that we will not do CSW for D+R solutions
+        self.num_sols = 2
+        self.sol_range = np.arange(self.num_sols, dtype = int)
+        self.coord_r_max_idx = self.coord_r_max_idx[:, :, :self.num_sols, :]
+
         self.coord_r_max_idx[:, 0] += 0.5 
         self.coord_r_max_idx[:, 1] -= 0.5 
         self.coord_r_max_idx[:, 0] -= 90
@@ -89,7 +153,7 @@ class ara_csw:
 
         if self.use_debug:
             self.corf_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
-        del reco_dat, reco_hf, coef, coord, evt_range, tp_range
+        del reco_dat, coef, coord, evt_range, tp_range
 
         if self.verbose:
             print('arrival time delay is on!')
