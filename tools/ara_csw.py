@@ -147,7 +147,7 @@ class ara_csw:
         self.pol_range = np.arange(num_pols, dtype = int)
 
         if self.use_debug:
-            self.corf_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
+            self.coef_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
         del reco_dat, coef, coord, evt_range, tp_range
 
         # Instruct code that we will not do CSW for D+R solutions
