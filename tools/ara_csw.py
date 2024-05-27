@@ -137,11 +137,6 @@ class ara_csw:
         self.coord_r_max_idx = coord_t[tp_range[:, np.newaxis, np.newaxis, np.newaxis], self.pol_range[np.newaxis, :, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, np.newaxis, :]]
         self.coord_r_max_idx  = np.transpose(self.coord_r_max_idx, (1, 0, 2, 3))
 
-        # Instruct code that we will not do CSW for D+R solutions
-        self.num_sols = 2
-        self.sol_range = np.arange(self.num_sols, dtype = int)
-        self.coord_r_max_idx = self.coord_r_max_idx[:, :, :self.num_sols, :]
-
         self.coord_r_max_idx[:, 0] += 0.5 
         self.coord_r_max_idx[:, 1] -= 0.5 
         self.coord_r_max_idx[:, 0] -= 90
@@ -154,6 +149,11 @@ class ara_csw:
         if self.use_debug:
             self.corf_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
         del reco_dat, coef, coord, evt_range, tp_range
+
+        # Instruct code that we will not do CSW for D+R solutions
+        self.num_sols = 2
+        self.sol_range = np.arange(self.num_sols, dtype = int)
+        self.coord_r_max_idx = self.coord_r_max_idx[:, :, :self.num_sols, :]
 
         if self.verbose:
             print('arrival time delay is on!')
