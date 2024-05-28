@@ -271,6 +271,24 @@ class ara_raytrace_loader:
 
     def __init__(self, n0 = 1.35, nf = 1.78, l = 0.0132, n_bulk = 1.5, 
                  use_bulk_ice = False, verbose = False):
+        """
+        Prepare AraSim for raytracing
+
+        Parameters
+        ----------
+        n0 : float, optional
+            Index of refraction of the deep ice. Used in exponential ice model.
+        nf : float, optional
+            Index of refraction of the firn. Used in exponential ice model.
+        l : float, optional
+            Characteristic length used in exponential ice model.
+        n_bulk : float, optional
+            Index of refraction of the bulk. Used in uniform ice model.
+        use_bulk_ice : bool, optional
+            If True, will use uniform ice model defined by `n_bulk`.
+        verbose : bool, optional
+            If True, will output additional setup and debugging information.
+        """
 
         self.use_bulk_ice = use_bulk_ice
         self.verbose = verbose
@@ -313,14 +331,52 @@ class ara_raytrace_loader:
         theta_bin = np.linspace(0.5, 179.5, 179 + 1), 
         phi_bin = np.linspace(-179.5, 179.5, 359 + 1), 
         radius_bin = np.array([41,300]),
-        num_ray_sol = np.array([1, 2], dtype = int), debug = False
+        num_ray_sol = np.array([1, 2], dtype = int), 
+        debug = False
     ):
+        """
+        Initialize all source and target positions in cylindrical coodinates [m].
 
+        Parameters
+        ----------
+        st : int
+            Station number. 
+        yrs : int
+            Year of data that you are analyzing.
+        theta_bin : numpy.ndarray, optional
+            Event zenith angles wrt the antenna [deg] with which you would like 
+              to calculate the arrival time table. 
+        phi_bin : numpy.ndarray, optional
+            Event azimuthal angles wrt the antenna[deg] with which you would like 
+              to calculate the arrival time table. 
+        radius_bin : numpy.ndarray, optional
+            Event radial distances [m] with which you would like to calculate 
+              the arrival time table. 
+        num_ray_sol : numpy.ndarray, optional
+            Ray solution identifiers corresponding to direct and refracted rays.
+        debug : bool
+            If True, will output debugging information.
+
+        Attributes Stored
+        -----------------
+        self.trg_r
+            Target radii. Multidimensional array.
+        self.trg_z
+            Target depths. An array of antenna depths.
+        self.src_r
+            Source radii. List containing a single value: 0
+        self.src_z 
+            Source depths. A multidimensional array that seems to 
+              contain depths centered on the average antenna position
+        """
+
+        # Load antenna positions
         from tools.ara_data_load import ara_geom_loader
         ara_geom = ara_geom_loader(st, yrs)
         self.ant_pos = ara_geom.get_ant_xyz()
         del ara_geom
 
+        # Save theta, phi, radius, and ray solutions to class
         self.num_ray_sol = num_ray_sol
         self.theta_bin = theta_bin
         self.phi_bin = phi_bin
@@ -331,14 +387,18 @@ class ara_raytrace_loader:
             print('phi range:', self.phi_bin)
             print('radius range:', self.radius_bin)
             print('number of ray solution:', self.num_ray_sol)
+
+        # Convert theta, phi, and radius target positions to xyz
+        #   by creating arrays that contain x, y, and z values [m] in 4d arrays
+        #   so that the indices refer to theta, phi, rays*radii, n_ants
+        # Shape will be: ( theta, phi, rays*radii, n_ants )
         theta_radian = np.radians(self.theta_bin)
         phi_radian = np.radians(self.phi_bin)
-
         r_4d = np.tile(
             self.radius_bin[np.newaxis, np.newaxis, :, np.newaxis], 
             (len(self.theta_bin), len(self.phi_bin), 
              len(self.num_ray_sol), num_ants)
-        )
+        ) 
         x_4d = ( r_4d 
                  * np.sin(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis]
                  * np.cos(phi_radian)[np.newaxis, :, np.newaxis, np.newaxis]   )
@@ -349,12 +409,14 @@ class ara_raytrace_loader:
                  * np.cos(theta_radian)[:, np.newaxis, np.newaxis, np.newaxis] )
         del theta_radian, phi_radian
 
+        # Calculate the target positions in cylindrical r+z coordinates
         self.trg_r = np.sqrt(
             (x_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 0, :])**2 
             + (y_4d - self.ant_pos[np.newaxis, np.newaxis, np.newaxis, 1, :])**2
         )
         self.trg_z = np.copy(self.ant_pos[2])
 
+        # Calculate the source position in cylindrical r+z coordinates
         self.src_r = np.full((1), 0, dtype = float)
         self.src_z = z_4d + np.nanmean(self.ant_pos[2])
         del r_4d, x_4d, y_4d, z_4d
@@ -368,6 +430,42 @@ class ara_raytrace_loader:
             print('src_z[:,0,0,0]:',self.src_z[:,0,0,0])
 
     def get_ray_solution(self, trg_r, src_z, trg_z = -200, debug = False):
+        """
+        Perform the ray tracing for provided target and source position.
+
+        Parameters
+        ----------
+        trg_r : float
+            Radial distance [m] to target position of ray solution.
+        src_z : float
+            Depth of source position [m].
+        trg_z : float, optional
+            Depth of target position [m], defaulting to ARA antenna depth of 
+              -200 meters. 
+        debug : bool
+            If True, will output debugging information.
+
+        Returns
+        -------
+        path_len : numpyp.ndarray
+            Contains the path length [m] calculated for each ray solution.
+        path_time
+            Contains the flight time [ns] calculated for each ray solution.
+        launch_ang
+            Contains the signal launch angle at the souce [rad] 
+              calculated for each ray solution.
+        receipt_ang
+            Contains the signal receiving angle at the target [rad]
+              calculated for each ray solution.
+        reflection_ang
+            Contains the signal's reflection angle off the surface of the ice
+              [rad] calculated for each ray solution.
+        miss
+            Distance between the desired target and the final position in 
+              the ray tracing solution [m], calculated for each ray solution.
+        attenuation
+            Signal attenuation calculated for each ray solution.
+        """
 
         #setting vector
         self.ara_sim.src.SetXYZ(trg_r, 0, src_z);
@@ -384,6 +482,7 @@ class ara_raytrace_loader:
         )
         del sol_cnt, sol_err
 
+        # Prepare output arrays for ray tracing results.
         path_len = np.full((len(self.num_ray_sol)), np.nan, dtype = float)
         path_time = np.copy(path_len)
         launch_ang = np.copy(path_len)
@@ -392,10 +491,11 @@ class ara_raytrace_loader:
         miss = np.copy(path_len)
         attenuation = np.copy(path_len)
 
+        # Save ray tracing output for each solution
         sol_num = 0
         for sol in self.ara_sim.paths:
             path_len[sol_num] = sol.pathLen
-            path_time[sol_num] = sol.pathTime*1e9
+            path_time[sol_num] = sol.pathTime*1e9 # convert to ns
             launch_ang[sol_num] = sol.launchAngle
             receipt_ang[sol_num] = sol.receiptAngle
             reflection_ang[sol_num] = sol.reflectionAngle
@@ -414,7 +514,23 @@ class ara_raytrace_loader:
                  miss, attenuation )
 
     def get_arrival_time_table(self, debug = False):
+        """
+        Get ray tracing results for full parameter space requested by 
+          theta_bin, phi_bin, radius_bin, n_ants, and n_rays.
 
+        Parameters
+        ----------
+        debug : bool
+            If True, will output debugging information.
+
+        Returns
+        -------
+        Same as get_ray_solution() but the arrays are now 5 dimensional where
+          each index in the array corresponds to theta, phi, radius, 
+          antenna, and ray solution.
+        """
+
+        # Initialize output multidimensional arrays to `nan` values
         path_len = np.full(
             ( len(self.theta_bin), 
               len(self.phi_bin), 
@@ -433,6 +549,8 @@ class ara_raytrace_loader:
         if self.verbose:
             print('arrival time table size:', path_time.shape)
 
+        # For each theta, phi, radius, and antenna save the output arrays
+        #   from the ray solver
         for t in tqdm(range(len(self.theta_bin)), ascii = False):
             for p in range(len(self.phi_bin)):
                 for r in range (len(self.radius_bin)):

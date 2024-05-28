@@ -9,6 +9,95 @@ from tools.ara_utility import size_checker
 from tools.ara_sim_load import ara_raytrace_loader
 
 def arr_time_table_loader(Station = None):
+    """
+    Generate arrival time tables and save to h5 file in: 
+      `$OUTPUT_PATH/ARA0{Station}/arr_time_table/`
+      and named: `arr_time_table_A{Station}_original_3radii.h5`
+
+    Parameters
+    ----------
+    Station : int
+        The station number. Not sure why it's initialized to `None` -ARB
+
+    Output File Arrays
+    ------------------
+    ant_pos
+        Antenna positions [m] in station-centric coordinates and ordered 
+          according to RF Channel indexing (so `ant%4` gives the string number).
+        For more information, refer to [1]_.
+        Shape : (3, 16)
+    theta_bin
+        Event zenith angle range [deg] for which the table is tabulated.
+        Defined in `tools.ara_sim_load.get_src_trg_position()`.
+        Shape : (n_thetas)
+    phi_bin
+        Event azimuthal angle range [deg] for which the table is tabulated.
+        Defined in `tools.ara_sim_load.get_src_trg_position()`.
+        Shape : (n_phis)
+    radius_bin
+        Event radial distance range [m] for which the table is tabulated.
+        Defined in `tools.ara_sim_load.get_src_trg_position()`.
+        Shape : (n_radii)
+    num_ray_sol
+        The number of ray solutions for which the table is tabulated.
+        Defined in `tools.ara_sim_load.get_src_trg_position()`.
+        Default : [1,2], presumably meaning direct and refracte/reflected rays.
+        Shape : (n_rays)
+    path_len
+        Path length [m] from source to target calculated for each theta, phi, 
+          radius, antenna, and ray solution defined in `theta_bin`, `phi_bin`,
+          `radius_bin`, `ant_pos`, and `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    arr_time_table
+        Travel time [ns] from source to target calculated for each theta, phi, 
+          radius, antenna, and ray solution defined in `theta_bin`, `phi_bin`,
+          `radius_bin`, `ant_pos`, and `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    launch_ang
+        Launch angle of the signal [rad] from the source calculated for each 
+          theta, phi, radius, antenna, and ray solution defined in `theta_bin`, 
+          `phi_bin`, `radius_bin`, `ant_pos`, and `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    receipt_ang
+        Receiving angle [rad] of the signal at the target calculated for each   
+          theta, phi,radius, antenna, and ray solution defined in `theta_bin`, 
+          `phi_bin`,`radius_bin`, `ant_pos`, and `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    reflection_ang
+        Reflection angle [rad] of the signal at the surface of the ice. 
+        Calculated for each theta, phi, radius, antenna, and ray solution 
+          defined in `theta_bin`, `phi_bin`, `radius_bin`, `ant_pos`, and 
+          `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    miss
+        Distance between the target position of the ray solver and the final 
+          position calculated for the ray [m]. Should not be large. 
+        Calculated for each theta, phi, radius, antenna, and ray solution 
+          defined in `theta_bin`, `phi_bin`, `radius_bin`, `ant_pos`, and 
+          `num_ray_sol` respectively.
+        From `AraSim/log.txt`:
+          "miss distance is the distance between final result and target location"
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    attenuation
+        Signal attenuation from source to target calculated for each theta, phi, 
+          radius, antenna, and ray solution defined in `theta_bin`, `phi_bin`,
+          `radius_bin`, `ant_pos`, and `num_ray_sol` respectively.
+        Calculated in `tools.ara_sim_load.get_ray_solution()`.
+        Shape : ( n_theta, n_phi, n_radii, n_ants, n_rays )
+    ice_model
+        Parameters of the ice model used for time table calculation. 
+        Defined in `tools.ara_sim_load.__init__()`.
+          
+    References
+    ----------
+    [1] : https://aradocs.wipac.wisc.edu/0021/002188/001/bootcamp2020-araroot.pdf
+    """
 
     print('Collecting arrival time starts!')
 

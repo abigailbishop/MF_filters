@@ -133,9 +133,39 @@ def reco_ele_collector(
             ara_root.del_TGraph()
         ara_root.del_usefulEvt()   
 
+        """
+        Used to be: 
+            chunk_reco
+                ara_int.get_sky_map(
+                    wf_int.pad_v, weights = wei_pairs[:, evt], wei_pol = wei_pol[:, evt])
+                coef[:, :, :, evt] = ara_int.coval_max
+                coord[:, :, :, :, evt] = ara_int.coord_max
+            ara_py_interferometers
+                self.coval_max = sky_map[
+                    self.pol_range[:, np.newaxis, np.newaxis], 
+                    coord, 
+                    self.rad_range[np.newaxis, :, np.newaxis], 
+                    self.ray_range[np.newaxis, np.newaxis, :]
+                ] # array dim (# of pols, # of rs, # of rays)
+                self.coord_max = np.full(self.coord_shape, np.nan, dtype = float) 
+                    # array dim (# of pols, theta and phi, # of rs, # of rays)
+                self.coord_max[:, 0] = self.theta[coord // self.num_phis]
+                self.coord_max[:, 1] = self.phi[coord % self.num_phis]
+        """
+
+        # Compute max correlation coefficient for given azimuth
+        #   over a range of polarizations, zenith angles, radii, and rays
         ara_int.get_sky_map(wf_int.pad_v, weights = wei_pairs[:, evt])
-        coef[:, :, :, :, evt] = ara_int.coef_max_ele
-        coord[:, :, :, :, evt] = ara_int.coord_max_ele
+
+        # Correlation coefficient of the highest in azimuthal sweep
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        coef[:, :, :, :, evt] = ara_int.coef_max_ele 
+
+        # Phi value with the highest correlation coefficient in azimuthal sweep
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        coord[:, :, :, :, evt] = ara_int.coord_max_ele 
+
+
     del ara_root, num_evts, num_ants, wf_int, ara_int, daq_qual_cut_sum, wei_pairs, evt_num_b
 
     print('Reco collecting is done!')
