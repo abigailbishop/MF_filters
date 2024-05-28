@@ -107,7 +107,7 @@ def Distribution_1D_plt(
         data = np.nanmax( 
             np.array(file.get(f'{ana_variable}')),
             axis=0
-         )
+        )
         trig = np.array(file.get('trig_type'))
         for i in range(len(trig)):
             if trig[i] == trigger_type:
@@ -229,10 +229,85 @@ def hist2d(
         
     return fig, ax
 
+def plot_zen_phi(
+    reco_files, trigger_type, save_name, cmap="BuPu",
+    pol=0, sol=0, radius_index=0, bins=10, figsize=(5,4), plot_title=""
+):
+
+    # Dataset {2, 180, 5, 3, 7866}
+    
+    total_runs = len(reco_files)
+    max_entries_per_run = 150000
+    zeniths = np.full(total_runs*max_entries_per_run, np.nan)
+    phis = np.full(total_runs*max_entries_per_run, np.nan)
+    current_index = 0
+
+    for file in reco_files:
+        file = h5py.File(file.strip(), "r")
+
+        # Currently not in use (didn't work lol)
+        # Picked the event based on the reconstruction radius with the best result
+        if radius_index == None: 
+            # Only use the best radius
+            coefs = file['coef'][pol, :, :, sol, :]
+            coords = file['coord'][pol, :, :, sol, :]   
+            coef_max_r_idx = np.nanargmax(coefs, axis=2)  
+            coefs = np.array(coefs)[
+                np.arange(coefs.shape[0])[:, np.newaxis, np.newaxis],
+                coef_max_r_idx,
+                np.arange(coefs.shape[2])[np.newaxis, np.newaxis, :],
+            ]
+            coords = np.array(coords)[
+                np.arange(coords.shape[0])[:, np.newaxis, np.newaxis],
+                coef_max_r_idx,
+                np.arange(coords.shape[2])[np.newaxis, np.newaxis, :],
+            ]
+        else: 
+            coefs = file['coef'][pol, :, radius_index, sol, :]
+            coords = file['coord'][pol, :, radius_index, sol, :]
+
+        coef_max_idx = np.nanargmax(coefs, axis=0)
+        best_coefs = np.array(coefs)[
+            coef_max_idx,
+            np.arange(coefs.shape[1])[np.newaxis, :],
+        ]
+
+        best_thetas = np.array(file['theta'])[coef_max_idx]
+        best_phis = np.array(coords)[
+            coef_max_idx,
+            np.arange(coords.shape[1])[np.newaxis, :],
+        ]
+
+        # Check trigger type and save to array
+        trig = np.array(file.get('trig_type'))
+        for i in range(len(trig)):
+            if trig[i] == trigger_type:
+                zeniths[current_index] = best_thetas[i]
+                phis[current_index] = best_phis[0,i]
+                current_index += 1
+        file.close()
+        del file
+
+    if plot_title != "":
+        plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
+    else:
+        plot_title = trig_type_str(trigger_type)
+
+    fig, ax = hist2d(
+        phis[:current_index], zeniths[:current_index], 
+        bins=bins, save_name=save_name, figsize=figsize,
+        cmap = "Purples",
+        x_label="Reconstructed Azimuthal Angle [deg]",
+        y_label="Reconstructed Elevation Angle [deg]",
+        title=plot_title
+    )
+
+    return fig, ax
+
 def plot_rad_zen_coef(
     reco_file, event, 
     pol=0, sol=0, save_name=None,
-    cmap="Blues", cbar_min=None, cbar_max=None, 
+    cmap="Purples", cbar_min=None, cbar_max=None, 
 ):
     """"
     For an event index in the provided h5 reconstruction file, plot the 
