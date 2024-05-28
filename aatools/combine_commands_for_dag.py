@@ -62,14 +62,14 @@ def main():
         help="Absolute path to the directory where new shell scripts will be saved.")
     parser.add_argument('station', type=int,
         help="Number of the ARA station")
-    parser.add_argument('-k', '--keys', type=str, nargs="*",
+    parser.add_argument('-k', '--keys', type=str, nargs="*", required=True,
         help="key corresponding to the script called by script_executor.py")
     parser.add_argument('--first_run', type=int, default = 0,
         help="First run being analyzed")
     parser.add_argument('--last_run', type=int, default = 100000,
         help="Last run being analyzed")
     parser.add_argument('--runs_per_job', type=int, default = 10,
-        help="Number of runs to execute the script for per job.")
+        help="Number of runs to execute the script for per job. (default:10)")
     parser.add_argument('--blind_dat', type=int, default=1)
     parser.add_argument('--condor_run', type=int, default=0)
     parser.add_argument('--not_override', type=int, default=0)
