@@ -100,6 +100,103 @@ def hist2d(
         
     return fig, ax
 
+def plot_rad_zen_coef(
+    reco_file, event, 
+    pol=0, sol=0, save_name=None,
+    cmap="Blues", cbar_min=None, cbar_max=None, 
+):
+    """"
+    For an event index in the provided h5 reconstruction file, plot the 
+      correlation coefficients calculated for the various radii and zeniths.
+
+    Parameters
+    ----------
+    reco_file : h5py._hl.files.File
+        The h5 file (already loaded into python with h5py.File()) with data
+          to be plotted.
+    event : int
+        The index in the `reco_file` corresponding to the event to be plotted.
+    pol : int
+        The index of the polarization that was reconstructed.
+    sol : int
+        The index of the ray solution that was reconstructed.
+    save_name : str
+        Path to where you would like to save the created plot.
+    cmap : str or matplotlib.colors.Colormap
+        Colormap with which you'd like the heatmap to be plotted.
+    cbar_min : float
+        Value corresponding to the minimum value on the color bar.
+    cbar_max : float
+        Value corresponding to the maximum value on the colorbar.
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure that was plotted.
+    ax : matplotlib.axes._axes.Axes
+        The axes of the figure that was plotted.
+    """
+
+    # Parse data from the provided reco_file
+    radii = reco_file['radius']
+    max_radius = max(radii)
+    zeniths = reco_file['theta']
+    coefs = reco_file['coef'][pol, :, :, sol, event]
+
+    # Size (in meters) of each bin created along the radius axis
+    radius_bin_width = 30
+
+    # Initialize the array of values we'll be plotting 
+    # Will plot data for all zeniths
+    # Will plot radii from 0 to to max_radius + (3*radius_bin_width)
+    plotter = np.full( 
+        ( coefs.shape[0],                    # Number of zenith bins to plot
+         (max_radius//radius_bin_width)+3 ), # Number of radius bins to plot 
+         # Increment radius bins by 3 to put padding on the right of the plot
+        np.nan # Initialize to values of `nan` which will appear blank on plot
+    )
+
+    # Add correlation coefficients to the plotting array
+    for radius_index, radius in enumerate(radii):
+        plotter_index = radius//radius_bin_width # ex: 170//20 = 8
+        plotter[:,plotter_index] = coefs[:,radius_index]
+
+    # Calculate horizontal and vertical extents of the plotting array
+    # Shift radius extent by -radius_bin_width/2 to center the bins 
+    extent = [
+        -radius_bin_width/2, # Lower radius
+        (radius_bin_width*plotter.shape[1])-radius_bin_width/2, # Upper radius 
+        zeniths[-1], # Upper zenith
+        zeniths[0], # Lower zenith
+    ]
+ 
+    # Plot the plotter array
+    fig, ax = plt.subplots()   
+    mappable = ax.imshow(plotter, extent=extent, cmap=cmap, 
+                         origin="upper", aspect='auto') 
+    
+    # Add Labels
+    ax.set_xlabel("Reconstruction Radii [m]")
+    ax.set_ylabel("Reconstruction Zeniths [deg]")
+    ax.set_title(f"Event {event}, Polarization {pol}, Solution {sol}")
+
+    # Build colorbar
+    if cbar_min !=None: mappable.norm.vmin = cbar_min
+    if cbar_max !=None: mappable.norm.vmax = cbar_max
+    plt.colorbar(mappable=mappable, label="Correlation Coefficient")
+
+    # Add reconstruction radii to the plot
+    for radius in radii:
+        ax.annotate(f"Reconstruction Radius: {radius:.0f}", 
+                    (radius+radius_bin_width, 0), alpha=0.5,
+                    horizontalalignment="center", rotation="vertical")
+
+    # Cleanup and save plot (if requested)
+    plt.tight_layout()
+    if save_name!=None: plt.savefig(save_name, dpi=300)
+        
+    return fig, ax
+
 def get_run_number_from_file(file_name):
     split_file_name = file_name.split("_R")[1]
     run_number = ""
