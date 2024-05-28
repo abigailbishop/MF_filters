@@ -55,6 +55,51 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     hist_1d.Draw()
     c1.Print(targetFile, 'png')
 
+def hist2d(
+    x_array, y_array, 
+    cmap="ocean_r", figsize=(5,4),
+    bins=10, xyranges=None, 
+    weights=None, density=None, norm=None,
+    x_label=None, y_label=None, title=None,
+    cbar_min=None, cbar_max=None,
+    save_name=None,
+):
+    """
+    Plots a 2D histogram without all the classic clutter
+    """
+    
+    fig, ax = plt.subplots(figsize=figsize)
+    H, xbins, ybins = np.histogram2d(
+        x_array, y_array, bins=bins, range=xyranges,
+        weights=weights, density=density
+    )
+    extent = [xbins[0], xbins[-1], ybins[0], ybins[-1]]
+    mappable = ax.imshow(H.T, extent=extent, cmap=cmap, 
+                         origin='lower', aspect='auto', norm=norm)
+    
+    if x_label  !=None: ax.set_xlabel(x_label)
+    if y_label  !=None: ax.set_ylabel(y_label)
+    if title    !=None: ax.set_title(title)
+    if cbar_min !=None: mappable.norm.vmin = cbar_min
+    if cbar_max !=None: mappable.norm.vmax = cbar_max
+    if xyranges !=None: 
+        if np.array(xyranges).ndim == 2: 
+            ax.set_xlim(*xyranges[0]); ax.set_ylim(*xyranges[1])
+        else: 
+            ax.set_xlim(*xyranges); ax.set_ylim(*xyranges)
+    
+    if isinstance(weights, np.ndarray):
+        plt.colorbar(mappable=mappable, label="Weighted Number of Events")
+    elif isinstance(weights, list):
+        plt.colorbar(mappable=mappable, label="Weighted Number of Events")
+    else:
+        plt.colorbar(mappable=mappable, label="Number of Events")
+    plt.tight_layout()
+    
+    if save_name!=None: plt.savefig(save_name, dpi=300)
+        
+    return fig, ax
+
 def get_run_number_from_file(file_name):
     split_file_name = file_name.split("_R")[1]
     run_number = ""
