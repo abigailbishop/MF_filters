@@ -9,7 +9,7 @@ export HDF5_USE_FILE_LOCKING='FALSE'
 source /cvmfs/ara.opensciencegrid.org/trunk/centos7/setup.sh
 
 export RAW_PATH=/data/exp/ARA
-export OUTPUT_PATH=/data/user/abishop/ara/a23/a2/step2
+export OUTPUT_PATH=/data/ana/ARA
 export ARA_UTIL_INSTALL_DIR=/home/mkim/analysis/AraSoft/AraUtil
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ARA_UTIL_INSTALL_DIR
 export DYLD_LIBRARY_PATH=$DYLA_LIBRARY_PATH:$ARA_UTIL_INSTALL_DIR

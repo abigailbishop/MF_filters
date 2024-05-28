@@ -42,9 +42,70 @@ class ara_csw:
             self.get_arrival_time_delay()
             self.get_zero_pad()
 
+    def get_coefs_coords(self, reco_file):
+        """
+        From the provided path, load this runs reconstruction results and
+          format properly for this script. 
+
+        Parameters
+        ----------
+        reco_file : str
+            Full path to h5 file output for this run's reconstruction results. 
+
+        Returns
+        -------
+        coefs : numpy.ndarray
+            Array containing correlation coefficient for different 
+              signal polarizations, reconstruction radii, ray solutions (D, R, 
+              D+R), and events in the run.
+            Shape: ( pols, rads, sols, evts )
+        coords : numpy.ndarray
+            Array containing values for zenith and azimuthal angles [in degrees]
+              corresponding to the highest correlation coefficient (the 
+              reconstruction with the highest confidence/likelihood) for each
+              signal polarization, reconstruction radius, ray solution, and event.
+            Shape: ( pols, [zenith, azimuth], rads, sols, evts )
+        """
+        
+        reco_hf = h5py.File(reco_file, 'r')
+
+        #(# of pols, # of thetas, # of rs, # of rays, # events)
+        coef_hf = reco_hf['coef'][:] # pol, rad, sol, evt # ASG: pol, theta, rad, ray, evt
+        coord_hf = reco_hf['coord'][:] # pol, tp, rad, sol, evt # ASG: pol, theta, rad, ray, evt
+
+        # For each polarization, theta, radius, and ray:
+        #   Get the index of phi that has the highest correlation coefficient
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        coef_theta_max_idx = np.nanargmax(coef_hf, axis = 1) 
+
+        best_coefs = np.array(coef_hf)[
+            np.arange(coef_hf.shape[0])[:, np.newaxis, np.newaxis, np.newaxis],
+            coef_theta_max_idx,
+            np.arange(coef_hf.shape[2])[np.newaxis, :, np.newaxis, np.newaxis],
+            np.arange(coef_hf.shape[3])[np.newaxis, np.newaxis, :, np.newaxis],
+            np.arange(coef_hf.shape[4])[np.newaxis, np.newaxis, np.newaxis, :],
+        ]
+
+        # For each polarization, theta, radius, and ray:
+        #   Get the value for phi with the greatest correlation value
+        # Shape: (# of pols, # of thetas, # of rs, # of rays)
+        best_thetas = np.array(reco_hf['theta'])[coef_theta_max_idx]
+        best_phis = np.array(coord_hf)[
+            np.arange(coord_hf.shape[0])[:, np.newaxis, np.newaxis, np.newaxis],
+            coef_theta_max_idx,
+            np.arange(coord_hf.shape[2])[np.newaxis, :, np.newaxis, np.newaxis],
+            np.arange(coord_hf.shape[3])[np.newaxis, np.newaxis, :, np.newaxis],
+            np.arange(coord_hf.shape[4])[np.newaxis, np.newaxis, np.newaxis, :],
+        ]
+        best_coords = np.stack( (best_thetas,best_phis), axis=1 )
+
+        reco_hf.close()
+
+        return best_coefs, best_coords
+
     def get_arrival_time_delay(self):
 
-        table_path = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{self.st}/arr_time_table/arr_time_table_A{self.st}_all.h5'
+        table_path = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{self.st}/arr_time_table/arr_time_table_A{self.st}.h5'
         if self.verbose:
             print('arrival time table:', table_path)
         table_hf = h5py.File(table_path, 'r')
@@ -63,80 +124,37 @@ class ara_csw:
             reco_dat = self.sim_reco_path
             if self.verbose:
                 print('reco path:', self.sim_reco_path)
-        reco_hf = h5py.File(reco_dat, 'r')
-        coef = reco_hf['coef'][:] # pol, rad, sol, evt # ASG: pol, theta, rad, ray, evt
-        coord = reco_hf['coord'][:] # pol, tp, rad, sol, evt # ASG: pol, theta, rad, ray, evt
-        self.pol_range = np.arange(len(coef[:, 0, 0, 0, 0]), dtype = int)
-        self.sol_range = np.arange(len(coef[0, 0, 0, :, 0]), dtype = int) 
-        evt_range = np.arange(len(coef[0, 0, 0, 0, :]), dtype = int)
-        tp_range = np.arange(len(coord[0, :, 0, 0, 0]), dtype = int) #ASG: Needs revision from chunk_reco.py 
+        coef, coord = self.get_coefs_coords(reco_dat)
+        self.pol_range = np.arange(len(coef[:, 0, 0, 0]), dtype = int)
+        self.sol_range = np.arange(len(coef[0, 0, :, 0]), dtype = int)
+        evt_range = np.arange(len(coef[0, 0, 0, :]), dtype = int)
+        tp_range = np.arange(len(coord[0, :, 0, 0, 0]), dtype = int)       
 
         ## horrible hard-coding that trying to get index of arrival time table from reco results
         ## highly possibly i will update after.... my defense!
-        print("coef shape: ", coef.shape, "\n coord shape: ", coord.shape)
-        self.coef_r_max_idx = np.argmax(coef, axis = 2) # pol, sol, evt #ASG: pol, theta, ray, evt
-                                    #ARB: Index of reconstruction radii with highest corr. coefficient  
-        print("coef axis 0: ", coef[:, 0, 0, 0, 0])
-        print("coef axis 1: ", coef[0, :, 0, 0, 0])
-        print("coef axis 2: ", coef[0, 0, :, 0, 0])
-        print("coef axis 3: ", coef[0, 0, 0, :, 0])
-        print("coef axis 4: ", coef[0, 0, 0, 0, :])
-        print("coord axis 0: ", coord[:, 0, 0, 0, 0])
-        print("coord axis 1: ", coord[0, :, 0, 0, 0])
-        print("coord axis 2: ", coord[0, 0, :, 0, 0])
-        print("coord axis 3: ", coord[0, 0, 0, :, 0])
-        print("coord axis 4: ", coord[0, 0, 0, 0, :])
-        print("BEFORE 1 coef_r_max_idx shape: ", self.coef_r_max_idx.shape)
-        coord_t = np.transpose(coord, (1, 0, 2, 3, 4)) # theta, pol, rad, ray, evt
-        print("coord_t: ", coord_t)
-        self.coord_r_max_idx = coord_t[
-            tp_range[:, np.newaxis, np.newaxis, np.newaxis], #meant to be theta-phi range but really theta range
-            self.pol_range[np.newaxis, :, np.newaxis, np.newaxis], #pol range
-            np.transpose(self.coef_r_max_idx, (1, 0, 2, 3)), 
-            self.sol_range[np.newaxis, np.newaxis, :, np.newaxis], 
-            evt_range[np.newaxis, np.newaxis, np.newaxis, :]]
-        print("HERE ASG 1 self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[:, 0, 0, 0])
-        self.coord_r_max_idx  = np.transpose(self.coord_r_max_idx, (1, 0, 2, 3)) #ASG: Putting this array back to the original order
-                            #pol, theta, ray, evt
-        print("HERE ASG 2 self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
+        self.coef_r_max_idx = np.argmax(coef, axis = 1) # pol, sol, evt
+        coord_t = np.transpose(coord, (1, 0, 2, 3, 4))
+        self.coord_r_max_idx = coord_t[tp_range[:, np.newaxis, np.newaxis, np.newaxis], self.pol_range[np.newaxis, :, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, np.newaxis, :]]
+        self.coord_r_max_idx  = np.transpose(self.coord_r_max_idx, (1, 0, 2, 3))
 
-        print("AFTER 1 coef_r_max_idx shape: ", self.coef_r_max_idx.shape)
-        print("BEFORE coord_r_max_idx shape: ", self.coord_r_max_idx.shape)
-        self.coord_r_max_idx = self.coord_r_max_idx[:2]
-        print("AFTER coord_r_max_idx shape: ", self.coord_r_max_idx.shape)
-        print("self.coord_r_max_idx[0, 0]: ", self.coord_r_max_idx[0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
-        self.coord_r_max_idx[:, 0] += 0.5
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
-        print("self.coord_r_max_idx[0, 0]: ", self.coord_r_max_idx[0, 0])
+        self.coord_r_max_idx[:, 0] += 0.5 
         self.coord_r_max_idx[:, 1] -= 0.5 
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
         self.coord_r_max_idx[:, 0] -= 90
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
         self.coord_r_max_idx[:, 0] *= -1
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
         self.coord_r_max_idx[:, 1] += 180
-        print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
-        print("self.coord_r_max_idx[pols, :, sol, self.evt].min ", np.min(self.coord_r_max_idx[0, :, 0, 0]))
-        #non_nan_mask = ~np.isnan(self.coord_r_max_idx)
-        #rounded_values = np.round(self.coord_r_max_idx[non_nan_mask]).astype(int)
-        #result = np.empty_like(self.coord_r_max_idx, dtype=float)
-        #result.fill(np.nan)
-        #result[non_nan_mask] = rounded_values
-        #self.coord_r_max_idx = result
         self.coord_r_max_idx = np.round(self.coord_r_max_idx).astype(int)
-        print("HERE ASG self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[0, :, 0, 0])
 
         self.pol_range = np.arange(num_pols, dtype = int)
 
         if self.use_debug:
-            self.corf_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
-        del reco_dat, reco_hf, coef, coord, evt_range, tp_range
+            self.coef_r_max = coef[self.pol_range[:, np.newaxis, np.newaxis], self.coef_r_max_idx, self.sol_range[np.newaxis, :, np.newaxis], evt_range[np.newaxis, np.newaxis, :]]
+        del reco_dat, coef, coord, evt_range, tp_range
+
+        # Instruct code that we will not do CSW for D+R solutions
+        self.num_sols = 2
+        self.sol_range = np.arange(self.num_sols, dtype = int)
+        self.coord_r_max_idx = self.coord_r_max_idx[:, :, :self.num_sols, :]
+        self.coef_r_max_idx = self.coef_r_max_idx[:, :self.num_sols, :]
 
         if self.verbose:
             print('arrival time delay is on!')
@@ -235,41 +253,11 @@ class ara_csw:
                 del fft_len, wf_len
  
             for sol in range(self.num_sols):
-                print("sol", sol)
-                print("HERE: ", self.coord_r_max_idx[pols, 0, sol, self.evt])
-                print("pols", pols)
-                print("self.evt: ", self.evt)
-                print("self.arr_delay shape: ", self.arr_delay.shape)
-                print("self.coord_r_max_idx[pols, 0, sol, self.evt]:", self.coord_r_max_idx[pols, 0, sol, self.evt])
-                print("self.coord_r_max_idx[pols, :, sol, self.evt]:", self.coord_r_max_idx[pols, :, sol, self.evt])
-                print("self.coord_r_max_idx[pols, 1, sol, self.evt]:", self.coord_r_max_idx[pols, 1, sol, self.evt])
-                print("HERE AA self.coord_r_max_idx[pols, sol, self.evt]:", np.count_nonzero(np.isnan(self.coord_r_max_idx[pols, sol, self.evt])) )
-                print("HERE AA self.coef_r_max_idx[pols, sol, self.evt]:", np.count_nonzero(np.isnan(self.coef_r_max_idx[pols, sol, self.evt])) )
-                print("self.good_chs[ant]:", self.good_chs[ant])
-                arr_del = self.arr_delay[self.coord_r_max_idx[pols, 0, sol, self.evt], #ASG theta
-                self.coord_r_max_idx[pols, 1, sol, self.evt], #ASG: phi
-                self.coef_r_max_idx[pols, 1, sol, self.evt], #ASG: rad
-                sol, #ASG: sol
-                self.good_chs[ant]] #ASG: ant
-                print("arr_del: ", arr_del)
+                arr_del = self.arr_delay[self.coord_r_max_idx[pols, 0, sol, self.evt], self.coord_r_max_idx[pols, 1, sol, self.evt], self.coef_r_max_idx[pols, sol, self.evt], sol, self.good_chs[ant]]
                 if np.isnan(arr_del):
                     self.nan_flag[pols, sol] = 1
                     continue
                 shift_t = self.pad_t[:self.pad_num[ant], ant] - arr_del
-                print("shift_t.shape: ", shift_t.shape)
-                
-                if 438<self.evt<440: 
-                    print("HERE, ant:", ant)
-                    print(dd_wf_v)
-                    import matplotlib.pyplot as plt
-                    fig, ax = plt.subplots()
-                    ax.plot(self.pad_t[:self.pad_num[ant], ant], dd_wf_v[:,6], alpha=0.75)
-                    ax.legend()
-                    ax.set_xlabel('Time (ns)', fontsize=12, ha='right', x=1, weight='bold')
-                    ax.set_ylabel('Voltage (mV)', fontsize=12, ha='center', va='top', weight='bold')
-                    ax.yaxis.set_label_coords(-0.11, 0.82)
-                    plt.savefig(f"../test-csw-{evt}.png", dpi=300)
-                
                 dd_f = Akima1DInterpolator(shift_t, dd_wf_v)   
                 int_v = dd_f(self.time_pad)
                 int_idx = ~np.isnan(int_v)
@@ -392,7 +380,6 @@ class ara_csw:
         self.get_impulsivity()
         if self.use_debug == False:
             del self.csw_wf, self.pad_t, self.pad_v, self.pad_num, self.evt
-
 
 
 
