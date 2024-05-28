@@ -25,6 +25,38 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm as tq
 import re
 
+def int_to_shorthand(number): 
+    """
+    Take in an integer, and return its shorthand as a string. Ex: 1 -> 1st
+    """
+    number = int(number)
+    if number == 1: 
+        return "1st"
+    elif number == 2: 
+        return "2nd"
+    elif number == 3: 
+        return "3rd"
+    else: 
+        return f"{number}th"
+    
+def trig_type_str(trig_type, shorthand=False):
+    """
+    From the integer version of trigger type, return string representation of
+      trigger type
+    """
+    trig_type = int(trig_type)
+    if trig_type == 0: 
+        if shorthand: return "RF"
+        else: return "Normal Triggers"
+    elif trig_type == 1:
+        if shorthand: return "CP"
+        else: return "Calibration Pulsers"
+    elif trig_type == 2:
+        if shorthand: return "Soft"
+        else: return "Software Triggers"
+    else: 
+        raise ValueError(f"Provided trigger type of {trig_type} is invalid.")
+
 def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(1)
@@ -39,7 +71,7 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     # Set title font weight to bold
     hist_1d.SetTitleFont(43, "t")
 
-    total_runs = sum(1 for _ in open(file_in))
+    total_runs = len(file_in)
     pbar = tq(total=total_runs)
     for lines in file_in:
        run_number = int(re.search(r'R(\d+)', lines).group(1))
@@ -54,6 +86,91 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     c1 = TCanvas("c1", "c1", 40, 10, 1400, 900)
     hist_1d.Draw()
     c1.Print(targetFile, 'png')
+
+def Distribution_1D_plt(
+    file_in, targetFile, 
+    plot_title, ana_variable, trigger_type
+):
+    total_runs = len(file_in)
+    max_entries_per_run = 150000
+    data_to_plot = np.full(total_runs*max_entries_per_run, np.nan)
+    current_index = 0
+    for lines in file_in:
+        file = h5py.File(lines.strip(), "r")
+        data = np.nanmax( 
+            np.array(file.get(f'{ana_variable}')),
+            axis=0
+         )
+        trig = np.array(file.get('trig_type'))
+        for i in range(len(trig)):
+            if trig[i] == trigger_type:
+                data_to_plot[current_index] = data[i]
+                current_index += 1
+        file.close()
+        del file, data
+
+    fig, ax = plt.subplots()
+    ax.hist(data_to_plot[:current_index], bins=20)
+    ax.set_xlabel(f"{ana_variable}")
+    ax.set_ylabel("Counts")
+    ax.set_title(plot_title)
+    plt.tight_layout()
+    plt.savefig(targetFile)
+    
+    return fig, ax
+
+def plot_rpr(
+    rpr_files, save_name, 
+    plot_title, trigger_type, 
+    index_from_highest = 3
+):
+    total_runs = len(rpr_files)
+    max_entries_per_run = 150000
+    data_to_plot = np.full(total_runs*max_entries_per_run, np.nan)
+    current_index = 0
+    for lines in rpr_files:
+        file = h5py.File(lines.strip(), "r")
+
+        # Get third highest RPR for each file
+        data = np.array(file['snr'])
+        data = np.sort(data, axis=0)[-index_from_highest]
+
+        # Check trigger type and save to array
+        trig = np.array(file.get('trig_type'))
+        print("data", data.shape, "trig", trig.shape)
+        for i in range(len(trig)):
+            if trig[i] == trigger_type:
+                data_to_plot[current_index] = data[i]
+                current_index += 1
+        file.close()
+        del file, data
+
+    if len(rpr_files) == 1: 
+        xlabel  = f"{int_to_shorthand(index_from_highest)} Max RPR in Run "
+        xlabel += str( get_run_number_from_file(rpr_files[0]) )
+    else: 
+        xlabel = f"{int_to_shorthand(index_from_highest)} Max RPR"
+
+    plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
+
+    fig, ax = plt.subplots()
+    ax.hist(data_to_plot[:current_index], bins=20)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel("Counts")
+    ax.set_title(plot_title)
+
+    # Calculate statistics and put in a box on the plot
+    mean_value = np.nanmean(data_to_plot)
+    std_deviation = np.nanstd(data_to_plot)
+    stats_text = f"Mean: {mean_value:.2f}\nStd Dev: {std_deviation:.2f}"
+    plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
+             transform=plt.gca().transAxes,
+             bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
+
+    plt.tight_layout()
+    plt.savefig(save_name)
+    
+    return fig, ax
 
 def hist2d(
     x_array, y_array, 
@@ -187,8 +304,9 @@ def plot_rad_zen_coef(
 
     # Add reconstruction radii to the plot
     for radius in radii:
-        ax.annotate(f"Reconstruction Radius: {radius:.0f}", 
-                    (radius+radius_bin_width, 0), alpha=0.5,
+        plot_position = (radius+radius_bin_width, -45)
+        ax.annotate(f"Reconstruction Radius: {radius:.0f} m", 
+                    plot_position, xytext=plot_position, alpha=0.25,
                     horizontalalignment="center", rotation="vertical")
 
     # Cleanup and save plot (if requested)
