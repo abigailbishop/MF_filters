@@ -154,6 +154,7 @@ class ara_csw:
         self.num_sols = 2
         self.sol_range = np.arange(self.num_sols, dtype = int)
         self.coord_r_max_idx = self.coord_r_max_idx[:, :, :self.num_sols, :]
+        self.coef_r_max_idx = self.coef_r_max_idx[:, :self.num_sols, :]
 
         if self.verbose:
             print('arrival time delay is on!')
