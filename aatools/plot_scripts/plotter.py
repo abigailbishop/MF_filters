@@ -57,6 +57,13 @@ def trig_type_str(trig_type, shorthand=False):
     else: 
         raise ValueError(f"Provided trigger type of {trig_type} is invalid.")
 
+def get_stats_text(data):
+    mean_value = np.nanmean(data)
+    std_deviation = np.nanstd(data)
+    stats_text = f"Mean: {mean_value:.2f}\nStd Dev: {std_deviation:.2f}"
+    stats_text += f"\nEvents: {np.count_nonzero(~np.isnan(data))}"
+    return stats_text
+
 def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(1)
@@ -114,21 +121,28 @@ def Distribution_1D_plt(
     ax.set_xlabel(f"{ana_variable}")
     ax.set_ylabel("Counts")
     ax.set_title(plot_title)
+
+    # Calculate statistics and put in a box on the plot
+    stats_text = get_stats_text(data_to_plot)
+    plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
+             transform=plt.gca().transAxes,
+             bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
+    
     plt.tight_layout()
     plt.savefig(targetFile)
     
     return fig, ax
 
-def plot_rpr(
-    rpr_files, save_name, 
-    plot_title, trigger_type, 
-    index_from_highest = 3
+def plot_ant_stats(
+    files,  save_name, 
+    plot_title, analysis_variable, trigger_type, 
+    index_from_highest = 3, 
 ):
-    total_runs = len(rpr_files)
+    total_runs = len(files)
     max_entries_per_run = 150000
     data_to_plot = np.full(total_runs*max_entries_per_run, np.nan)
     current_index = 0
-    for lines in rpr_files:
+    for lines in files:
         file = h5py.File(lines.strip(), "r")
 
         # Get third highest RPR for each file
@@ -145,11 +159,11 @@ def plot_rpr(
         file.close()
         del file, data
 
-    if len(rpr_files) == 1: 
-        xlabel  = f"{int_to_shorthand(index_from_highest)} Max RPR in Run "
-        xlabel += str( get_run_number_from_file(rpr_files[0]) )
+    if len(files) == 1: 
+        xlabel  = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
+        xlabel += f" in Run {get_run_number_from_file(files[0])}"
     else: 
-        xlabel = f"{int_to_shorthand(index_from_highest)} Max RPR"
+        xlabel = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
 
     plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
 
@@ -160,9 +174,7 @@ def plot_rpr(
     ax.set_title(plot_title)
 
     # Calculate statistics and put in a box on the plot
-    mean_value = np.nanmean(data_to_plot)
-    std_deviation = np.nanstd(data_to_plot)
-    stats_text = f"Mean: {mean_value:.2f}\nStd Dev: {std_deviation:.2f}"
+    stats_text = get_stats_text(data_to_plot)
     plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
              transform=plt.gca().transAxes,
              bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
