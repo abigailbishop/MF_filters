@@ -49,7 +49,7 @@ def trig_type_str(trig_type, shorthand=False):
     trig_type = int(trig_type)
     if trig_type == 0: 
         if shorthand: return "RF"
-        else: return "Normal Triggers"
+        else: return "RF Triggers"
     elif trig_type == 1:
         if shorthand: return "CP"
         else: return "Calibration Pulsers"
@@ -66,7 +66,10 @@ def get_stats_text(data):
     stats_text += f"\nEvents: {np.count_nonzero(~np.isnan(data))}"
     return stats_text
 
-def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type):
+def Distribution_1D(
+    file_in, targetFile, plot_title, ana_variable, trigger_type,
+    verbose=False
+):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPalette(1)
 
@@ -84,7 +87,7 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     pbar = tq(total=total_runs)
     for lines in file_in:
         if not os.path.exists(lines.strip()):
-            print(f"Skipping missing file {lines}")
+            if verbose: print(f"Skipping missing file {lines}")
             continue
         run_number = int(re.search(r'R(\d+)', lines).group(1))
         with h5py.File(lines.strip(), 'r') as hf:
@@ -100,8 +103,8 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     c1.Print(targetFile, 'png')
 
 def Distribution_1D_plt(
-    file_in, targetFile, 
-    plot_title, ana_variable, trigger_type
+    file_in, targetFile, plot_title, ana_variable, trigger_type, 
+    verbose=False, yscale=None,
 ):
     total_runs = len(file_in)
     max_entries_per_run = 150000
@@ -109,7 +112,7 @@ def Distribution_1D_plt(
     current_index = 0
     for lines in file_in:
         if not os.path.exists(lines.strip()):
-            print(f"Skipping missing file {lines}")
+            if verbose: print(f"Skipping missing file {lines}")
             continue
         file = h5py.File(lines.strip(), "r")
         data = np.nanmax( 
@@ -130,6 +133,9 @@ def Distribution_1D_plt(
     ax.set_ylabel("Counts")
     ax.set_title(plot_title)
 
+    if yscale != None:
+        ax.set_yscale(yscale)
+
     # Calculate statistics and put in a box on the plot
     stats_text = get_stats_text(data_to_plot)
     plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
@@ -144,8 +150,8 @@ def Distribution_1D_plt(
 def plot_ant_stats(
     files,  save_name, 
     plot_title, analysis_variable, trigger_type, 
-    index_from_highest = 3, 
-    xlabel=None, ylabel=None
+    index_from_highest = 3, yscale=None,
+    xlabel=None, ylabel=None, verbose=False
 ):
     total_runs = len(files)
     max_entries_per_run = 150000
@@ -154,7 +160,7 @@ def plot_ant_stats(
     for lines in files:
 
         if not os.path.exists(lines.strip()):
-            print(f"Skipping missing file {lines}")
+            if verbose: print(f"Skipping missing file {lines}")
             continue
 
         file = h5py.File(lines.strip(), "r")
@@ -189,6 +195,10 @@ def plot_ant_stats(
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(plot_title)
+
+    # Set yscale if user requests something special
+    if yscale != None:
+        ax.set_yscale(yscale)
 
     # Calculate statistics and put in a box on the plot
     stats_text = get_stats_text(data_to_plot)
@@ -247,8 +257,9 @@ def hist2d(
     return fig, ax
 
 def plot_zen_phi(
-    reco_files, trigger_type, save_name, cmap="BuPu",
-    pol=0, sol=0, radius_index=0, bins=10, figsize=(5,4), plot_title=""
+    reco_files, trigger_type, save_name, cmap="BuPu", norm=None,
+    pol=0, sol=0, radius_index=0, bins=10, figsize=(5,4), plot_title="",
+    verbose=False, cbar_min=None, cbar_max=None,
 ):
 
     # Dataset {2, 180, 5, 3, 7866}
@@ -259,13 +270,13 @@ def plot_zen_phi(
     phis = np.full(total_runs*max_entries_per_run, np.nan)
     current_index = 0
 
-    for file in reco_files:
+    for file_path in reco_files:
 
-        if not os.path.exists(file):
-            print(f"Skipping missing file {file}")
+        if not os.path.exists(file_path):
+            if verbose: print(f"Skipping missing file {file_path}")
             continue
 
-        file = h5py.File(file.strip(), "r")
+        file = h5py.File(file_path.strip(), "r")
 
         # Currently not in use (didn't work lol)
         # Picked the event based on the reconstruction radius with the best result
@@ -273,7 +284,16 @@ def plot_zen_phi(
             # Only use the best radius
             coefs = file['coef'][pol, :, :, sol, :]
             coords = file['coord'][pol, :, :, sol, :]   
-            coef_max_r_idx = np.nanargmax(coefs, axis=2)  
+
+            # Try to find the index of the best coeficient over all radii
+            try:
+                coef_max_r_idx = np.nanargmax(coefs, axis=2)  
+            except:
+                if verbose: print(f"Skipping all-nans over radius in {file_path}")
+                file.close()
+                del file
+                continue
+
             coefs = np.array(coefs)[
                 np.arange(coefs.shape[0])[:, np.newaxis, np.newaxis],
                 coef_max_r_idx,
@@ -288,7 +308,15 @@ def plot_zen_phi(
             coefs = file['coef'][pol, :, radius_index, sol, :]
             coords = file['coord'][pol, :, radius_index, sol, :]
 
-        coef_max_idx = np.nanargmax(coefs, axis=0)
+        # Try to find the index of the best coefficient over all elevation angles
+        try: 
+            coef_max_idx = np.nanargmax(coefs, axis=0)
+        except:
+            if verbose: print(f"Skipping all-nans over theta in {file_path}")
+            file.close()
+            del file
+            continue
+
         best_coefs = np.array(coefs)[
             coef_max_idx,
             np.arange(coefs.shape[1])[np.newaxis, :],
@@ -318,10 +346,11 @@ def plot_zen_phi(
     fig, ax = hist2d(
         phis[:current_index], zeniths[:current_index], 
         bins=bins, save_name=save_name, figsize=figsize,
-        cmap = "Purples",
+        cmap = "Purples", norm=norm,
         x_label="Reconstructed Azimuthal Angle [deg]",
         y_label="Reconstructed Elevation Angle [deg]",
-        title=plot_title
+        title=plot_title,
+        cbar_max=cbar_max, cbar_min=cbar_min,
     )
 
     return fig, ax
@@ -329,7 +358,7 @@ def plot_zen_phi(
 def plot_rad_zen_coef(
     reco_file, event, 
     pol=0, sol=0, save_name=None,
-    cmap="Purples", cbar_min=None, cbar_max=None, 
+    cmap="Purples", norm=None, cbar_min=None, cbar_max=None, 
 ):
     """"
     For an event index in the provided h5 reconstruction file, plot the 
@@ -350,6 +379,10 @@ def plot_rad_zen_coef(
         Path to where you would like to save the created plot.
     cmap : str or matplotlib.colors.Colormap
         Colormap with which you'd like the heatmap to be plotted.
+    norm: str or matplotlib.colors.Normalize
+        If not provided, colorbar has a linear scale. Can provide "log" to
+          request a logarithmic scale or "symlog" for a logarithmic scale with
+          positive and negative values.
     cbar_min : float
         Value corresponding to the minimum value on the color bar.
     cbar_max : float
@@ -399,7 +432,7 @@ def plot_rad_zen_coef(
     # Plot the plotter array
     fig, ax = plt.subplots()   
     mappable = ax.imshow(plotter, extent=extent, cmap=cmap, 
-                         origin="upper", aspect='auto') 
+                         origin="upper", aspect='auto', norm=norm) 
     
     # Add Labels
     ax.set_xlabel("Reconstruction Radii [m]")
