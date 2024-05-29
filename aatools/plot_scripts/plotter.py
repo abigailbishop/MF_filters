@@ -145,6 +145,7 @@ def plot_ant_stats(
     files,  save_name, 
     plot_title, analysis_variable, trigger_type, 
     index_from_highest = 3, 
+    xlabel=None, ylabel=None
 ):
     total_runs = len(files)
     max_entries_per_run = 150000
@@ -171,18 +172,22 @@ def plot_ant_stats(
         file.close()
         del file, data
 
-    if len(files) == 1: 
-        xlabel  = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
-        xlabel += f" in Run {get_run_number_from_file(files[0])}"
-    else: 
-        xlabel = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
+    # Automatically decide X and Y labels if not specified by user
+    if xlabel == None:
+        if len(files) == 1: 
+            xlabel  = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
+            xlabel += f" in Run {get_run_number_from_file(files[0])}"
+        else: 
+            xlabel = f"{int_to_shorthand(index_from_highest)} Max {analysis_variable}"
+    if ylabel == None: 
+        ylabel = "Counts"
 
     plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
 
     fig, ax = plt.subplots()
     ax.hist(data_to_plot[:current_index], bins=20, color=purple)
     ax.set_xlabel(xlabel)
-    ax.set_ylabel("Counts")
+    ax.set_ylabel(ylabel)
     ax.set_title(plot_title)
 
     # Calculate statistics and put in a box on the plot
