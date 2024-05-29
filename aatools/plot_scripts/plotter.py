@@ -81,14 +81,14 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     total_runs = len(file_in)
     pbar = tq(total=total_runs)
     for lines in file_in:
-       run_number = int(re.search(r'R(\d+)', lines).group(1))
-       with h5py.File(lines.strip(), 'r') as hf:
-           freq_range = np.array(hf.get(f'{ana_variable}')[0,:])
-           trig = np.array(hf.get('trig_type'))
-           for i in range(len(trig)):
-               if trig[i] == trigger_type:
+        run_number = int(re.search(r'R(\d+)', lines).group(1))
+        with h5py.File(lines.strip(), 'r') as hf:
+            freq_range = np.array(hf.get(f'{ana_variable}')[0,:])
+            trig = np.array(hf.get('trig_type'))
+            for i in range(len(trig)):
+                if trig[i] == trigger_type:
                     hist_1d.Fill(freq_range[i])
-       pbar.update()
+        pbar.update()
 
     c1 = TCanvas("c1", "c1", 40, 10, 1400, 900)
     hist_1d.Draw()
