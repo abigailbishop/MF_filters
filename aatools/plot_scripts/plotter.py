@@ -22,10 +22,13 @@ import h5py
 import ROOT
 from ROOT import TCanvas, TH1D
 import matplotlib.pyplot as plt
+from scipy.stats import norm
 from tqdm import tqdm as tq
 import re
+from collections.abc import Iterable  
 
 purple = "rebeccapurple"
+yellow = "darkgoldenrod"
 
 def int_to_shorthand(number): 
     """
@@ -255,6 +258,157 @@ def hist2d(
     if save_name!=None: plt.savefig(save_name, dpi=400)
         
     return fig, ax
+
+def plot_best_zen_phi_1D(
+    reco_files, trigger_type, save_name, 
+    pol=0, sol=0, radius_index=0, bins=10, figsize=(5,4),
+    plot_title="", yscale=None, 
+    verbose=False,
+):
+
+    # Dataset {2, 180, 5, 3, 7866}
+    
+    total_runs = len(reco_files)
+    max_entries_per_run = 150000
+    zeniths = np.full(total_runs*max_entries_per_run, np.nan)
+    phis = np.full(total_runs*max_entries_per_run, np.nan)
+    current_index = 0
+
+    for file_path in reco_files:
+
+        if not os.path.exists(file_path):
+            if verbose: print(f"Skipping missing file {file_path}")
+            continue
+
+        file = h5py.File(file_path.strip(), "r")
+
+        # Currently not in use (didn't work lol)
+        # Picked the event based on the reconstruction radius with the best result
+        if radius_index == None: 
+            # Only use the best radius
+            coefs = file['coef'][pol, :, :, sol, :]
+            coords = file['coord'][pol, :, :, sol, :]   
+
+            # Try to find the index of the best coeficient over all radii
+            coef_max_r_idx = np.nanargmax(np.nan_to_num(coefs, nan=0), axis=2)  
+
+            coefs = np.array(coefs)[
+                np.arange(coefs.shape[0])[:, np.newaxis, np.newaxis],
+                coef_max_r_idx,
+                np.arange(coefs.shape[2])[np.newaxis, np.newaxis, :],
+            ]
+            coords = np.array(coords)[
+                np.arange(coords.shape[0])[:, np.newaxis, np.newaxis],
+                coef_max_r_idx,
+                np.arange(coords.shape[2])[np.newaxis, np.newaxis, :],
+            ]
+        else: 
+            coefs = file['coef'][pol, :, radius_index, sol, :]
+            coords = file['coord'][pol, :, radius_index, sol, :]
+
+        coef_max_idx = np.nanargmax(np.nan_to_num(coefs, nan=0), axis=0)
+        best_coefs = np.array(coefs)[
+            coef_max_idx,
+            np.arange(coefs.shape[1])[np.newaxis, :],
+        ]
+
+        best_thetas = np.array(file['theta'])[coef_max_idx]
+        best_phis = np.array(coords)[
+            coef_max_idx,
+            np.arange(coords.shape[1])[np.newaxis, :],
+        ]
+
+        # Check trigger type and save to array
+        trig = np.array(file.get('trig_type'))
+        for i in range(len(trig)):
+            if trig[i] == trigger_type:
+                zeniths[current_index] = best_thetas[i]
+                phis[current_index] = best_phis[0,i]
+                current_index += 1
+        file.close()
+        del file
+
+    if current_index == 0: 
+        print("No values to plot")
+        return
+    
+    # Trim arrays, keep only what we need
+    zeniths = zeniths[:current_index]
+    phis    = phis[:current_index]
+
+    # Calculate mean and std of plots
+    zenith_mean = np.nanmean(zeniths)
+    zenith_std  = np.nanstd(zeniths)
+    phi_mean    = np.nanmean(phis)
+    phi_std     = np.nanstd(zeniths)
+
+    # Automatically decide Title and  X and Y labels if not specified by user
+    if plot_title != "":
+        plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
+    else:
+        plot_title = trig_type_str(trigger_type)    
+
+    # Calculate binning to ignore outliers
+    if isinstance(bins, str):
+        if bins=="center_on_mean":
+            zenith_bins   = np.linspace(zenith_mean-( 5*zenith_std ), 
+                                        zenith_mean+( 5*zenith_std ), 20)
+            phi_bins      = np.linspace(   phi_mean-( 5*   phi_std ), 
+                                           phi_mean+( 5*   phi_std ), 20)
+        else: 
+            raise ValueError(
+                f"Provided bin string of {bins} not recognized. "
+                 "This code only anticipates 'center_on_mean', integers, a "
+                 "list of bin edges, or a list with n_bins or bin edges "
+                 "for theta and phi distributions.")
+    elif isinstance(bins, Iterable): 
+        if len(bins) == 2: 
+            zenith_bins = bins[0]
+            phi_bins = bins[1]
+        else: 
+            zenith_bins = bins
+            phi_bins = bins
+    else: 
+        zenith_bins = 20
+        phi_bins = 20
+
+    # Plot elevation angles
+    fig_z, ax_z = plt.subplots()
+    ax_z.hist(zeniths, bins=zenith_bins, color=purple, density=True)
+    ax_z.set_xlabel("Best Reconstructed Elevation Angle [deg]")
+    ax_z.set_ylabel("Counts")
+    ax_z.set_title(plot_title)
+    ax_z.plot(zenith_bins, 
+              norm.pdf(zenith_bins, zenith_mean, zenith_std),
+              color=yellow, alpha=0.5, ls=":")
+    if yscale != None:
+        ax_z.set_yscale(yscale)
+    stats_text = get_stats_text(zeniths)
+    plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
+             transform=plt.gca().transAxes,
+             bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
+    plt.tight_layout()
+    plt.savefig(save_name.split(".")[0]+"_theta.png", dpi=400)
+
+    # Plot azimuths
+    fig_p, ax_p = plt.subplots()
+    ax_p.hist(phis, bins=phi_bins, color=purple, density=True)
+    ax_p.set_xlabel("Best Reconstructed Azimuthal Angle [deg]")
+    ax_p.set_ylabel("Counts")
+    ax_p.set_title(plot_title)
+    ax_p.plot(phi_bins, 
+              norm.pdf(phi_bins, phi_mean, phi_std),
+              color=yellow, alpha=0.5, ls=":")
+    if yscale != None:
+        ax_p.set_yscale(yscale)
+    stats_text = get_stats_text(phis)
+    plt.text(0.95, 0.95, stats_text, ha='right', va='top', 
+             transform=plt.gca().transAxes,
+             bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
+    plt.tight_layout()
+    plt.savefig(save_name.split(".")[0]+"_phi.png", dpi=400)
+    
+    return (fig_z, ax_z), (fig_p, ax_p)
 
 def plot_zen_phi(
     reco_files, trigger_type, save_name, cmap="BuPu", norm=None,
