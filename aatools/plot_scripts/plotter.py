@@ -137,7 +137,7 @@ def Distribution_1D_plt(
              bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
     
     plt.tight_layout()
-    plt.savefig(targetFile)
+    plt.savefig(targetFile, dpi=400)
     
     return fig, ax
 
@@ -192,7 +192,7 @@ def plot_ant_stats(
              bbox=dict(facecolor='white', alpha=0.5, edgecolor='black'))
 
     plt.tight_layout()
-    plt.savefig(save_name)
+    plt.savefig(save_name, dpi=400)
     
     return fig, ax
 
@@ -237,7 +237,7 @@ def hist2d(
         plt.colorbar(mappable=mappable, label="Number of Events")
     plt.tight_layout()
     
-    if save_name!=None: plt.savefig(save_name, dpi=300)
+    if save_name!=None: plt.savefig(save_name, dpi=400)
         
     return fig, ax
 
@@ -415,7 +415,7 @@ def plot_rad_zen_coef(
 
     # Cleanup and save plot (if requested)
     plt.tight_layout()
-    if save_name!=None: plt.savefig(save_name, dpi=300)
+    if save_name!=None: plt.savefig(save_name, dpi=400)
         
     return fig, ax
 
