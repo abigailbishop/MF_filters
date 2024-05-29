@@ -81,6 +81,9 @@ def Distribution_1D(file_in, targetFile, plot_title, ana_variable, trigger_type)
     total_runs = len(file_in)
     pbar = tq(total=total_runs)
     for lines in file_in:
+        if not os.path.exists(lines.strip()):
+            print(f"Skipping missing file {lines}")
+            continue
         run_number = int(re.search(r'R(\d+)', lines).group(1))
         with h5py.File(lines.strip(), 'r') as hf:
             freq_range = np.array(hf.get(f'{ana_variable}')[0,:])
@@ -103,6 +106,9 @@ def Distribution_1D_plt(
     data_to_plot = np.full(total_runs*max_entries_per_run, np.nan)
     current_index = 0
     for lines in file_in:
+        if not os.path.exists(lines.strip()):
+            print(f"Skipping missing file {lines}")
+            continue
         file = h5py.File(lines.strip(), "r")
         data = np.nanmax( 
             np.array(file.get(f'{ana_variable}')),
@@ -143,6 +149,11 @@ def plot_ant_stats(
     data_to_plot = np.full(total_runs*max_entries_per_run, np.nan)
     current_index = 0
     for lines in files:
+
+        if not os.path.exists(lines.strip()):
+            print(f"Skipping missing file {lines}")
+            continue
+
         file = h5py.File(lines.strip(), "r")
 
         # Get third highest RPR for each file
@@ -243,6 +254,11 @@ def plot_zen_phi(
     current_index = 0
 
     for file in reco_files:
+
+        if not os.path.exists(file):
+            print(f"Skipping missing file {file}")
+            continue
+
         file = h5py.File(file.strip(), "r")
 
         # Currently not in use (didn't work lol)
