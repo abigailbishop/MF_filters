@@ -164,7 +164,6 @@ def plot_ant_stats(
 
         # Check trigger type and save to array
         trig = np.array(file.get('trig_type'))
-        print("data", data.shape, "trig", trig.shape)
         for i in range(len(trig)):
             if trig[i] == trigger_type:
                 data_to_plot[current_index] = data[i]
