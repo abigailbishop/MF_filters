@@ -25,6 +25,8 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm as tq
 import re
 
+purple = "rebeccapurple"
+
 def int_to_shorthand(number): 
     """
     Take in an integer, and return its shorthand as a string. Ex: 1 -> 1st
@@ -123,7 +125,7 @@ def Distribution_1D_plt(
         del file, data
 
     fig, ax = plt.subplots()
-    ax.hist(data_to_plot[:current_index], bins=20)
+    ax.hist(data_to_plot[:current_index], bins=20, color=purple)
     ax.set_xlabel(f"{ana_variable}")
     ax.set_ylabel("Counts")
     ax.set_title(plot_title)
@@ -179,7 +181,7 @@ def plot_ant_stats(
     plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
 
     fig, ax = plt.subplots()
-    ax.hist(data_to_plot[:current_index], bins=20)
+    ax.hist(data_to_plot[:current_index], bins=20, color=purple)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("Counts")
     ax.set_title(plot_title)
@@ -197,7 +199,7 @@ def plot_ant_stats(
 
 def hist2d(
     x_array, y_array, 
-    cmap="ocean_r", figsize=(5,4),
+    cmap="Purples", figsize=(5,4),
     bins=10, xyranges=None, 
     weights=None, density=None, norm=None,
     x_label=None, y_label=None, title=None,
