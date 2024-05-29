@@ -286,13 +286,7 @@ def plot_zen_phi(
             coords = file['coord'][pol, :, :, sol, :]   
 
             # Try to find the index of the best coeficient over all radii
-            try:
-                coef_max_r_idx = np.nanargmax(coefs, axis=2)  
-            except:
-                if verbose: print(f"Skipping all-nans over radius in {file_path}")
-                file.close()
-                del file
-                continue
+            coef_max_r_idx = np.nanargmax(np.nan_to_num(coefs, nan=0), axis=2)  
 
             coefs = np.array(coefs)[
                 np.arange(coefs.shape[0])[:, np.newaxis, np.newaxis],
@@ -308,15 +302,7 @@ def plot_zen_phi(
             coefs = file['coef'][pol, :, radius_index, sol, :]
             coords = file['coord'][pol, :, radius_index, sol, :]
 
-        # Try to find the index of the best coefficient over all elevation angles
-        try: 
-            coef_max_idx = np.nanargmax(coefs, axis=0)
-        except:
-            if verbose: print(f"Skipping all-nans over theta in {file_path}")
-            file.close()
-            del file
-            continue
-
+        coef_max_idx = np.nanargmax(np.nan_to_num(coefs, nan=0), axis=0)
         best_coefs = np.array(coefs)[
             coef_max_idx,
             np.arange(coefs.shape[1])[np.newaxis, :],
@@ -337,6 +323,10 @@ def plot_zen_phi(
                 current_index += 1
         file.close()
         del file
+
+    if current_index == 0: 
+        print("No values to plot")
+        return
 
     if plot_title != "":
         plot_title = f"{plot_title} - {trig_type_str(trigger_type)}"
