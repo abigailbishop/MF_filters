@@ -68,14 +68,19 @@ def snr_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm 
             raw_t, raw_v = ara_root.get_rf_ch_wf(ant)
             wf_int.get_int_wf(raw_t, raw_v, ant, use_band_pass = True, use_cw = True, use_p2p = True, evt = evt,  dedisperse=True)
             p2p[ant, evt] = wf_int.int_p2p
-            del raw_t, raw_v
+            
+            # split waveform in quarters, save rms as average rms of two lowest rms quarters
+            segmented_wf = np.array_split(raw_v[raw_v !=0], 4) 
+            rms_values = [np.sqrt(np.mean(segment**2)) for segment in segmented_wf]
+            sorted_rms = sorted(rms_values)
+            mean_of_two_lowest_rms = np.mean(sorted_rms[:2])
+            rms[ant, evt] = mean_of_two_lowest_rms
+
+            del raw_t, raw_v, sorted_rms, mean_of_two_lowest_rms, segmented_wf, rms_values
             ara_root.del_TGraph()
         ara_root.del_usefulEvt()   
 
-
-
-
-        rms[:, evt] = np.nanstd(wf_int.pad_v, axis = 0)
+        #rms[:, evt] = np.nanstd(wf_int.pad_v, axis = 0)
     del ara_root, num_ants, wf_int
 
     rms_qual = np.full((num_evts, 4), False, dtype = bool)
