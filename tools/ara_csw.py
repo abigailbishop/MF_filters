@@ -105,7 +105,7 @@ class ara_csw:
 
     def get_arrival_time_delay(self):
 
-        table_path = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{self.st}/arr_time_table/arr_time_table_A{self.st}.h5'
+        table_path = os.path.expandvars("$OUTPUT_PATH") + f'/ARA0{self.st}/arr_time_table/arr_time_table_A{self.st}_all.h5'
         if self.verbose:
             print('arrival time table:', table_path)
         table_hf = h5py.File(table_path, 'r')
@@ -227,6 +227,57 @@ class ara_csw:
 
         return dd_wf_v
 
+    def get_wf_rolling(self, int_v, arr_del):
+        print("Inside, arr_delay: ", arr_del)
+        # bin shift = time delay / size of time bin
+        shift =  int(arr_del//self.dt+1)
+        print("Inside, shift: ", shift)
+
+        # Identify the non-NaN elements
+        int_v_non_nan_indices = np.where(~np.isnan(int_v))[0]
+        int_v_non_nan_values = int_v[int_v_non_nan_indices]
+        print("int_v_non_nan_values", int_v_non_nan_values)
+        print("int_v_non_nan_values.shape", int_v_non_nan_values.shape)
+    
+        # Roll the non-NaN elements
+        int_v_rolled_values = np.roll(int_v_non_nan_values, shift)
+    
+        # Create a copy of the original array before reinserting the rolled non-NaN elements
+        rolled_wf = np.full_like(int_v, np.nan)
+    
+        # Reinsert the rolled values back
+        rolled_wf[int_v_non_nan_indices + shift] = int_v_rolled_values
+    
+        return rolled_wf
+
+    # def get_wf_rolling(self, int_v, int_idx, nan_part_len, signal_region_len=240):
+    #     # save signal region length samples around maximum value in the waveforms
+    #     max_idx = np.argmax(int_v[int_idx])
+    #     ex_rad = signal_region_len//2
+    #     start_idx = max(0, max_idx - ex_rad)
+    #     end_idx = min(len(int_v[int_idx]), max_idx + ex_rad + 1)
+    #     central_region = int_v[int_idx][start_idx:end_idx]
+
+
+    #     # getting non-signal part, cut in half, and put in both sides of central region
+    #     left_part = int_v[int_idx][:start_idx]
+    #     right_part = int_v[int_idx][end_idx:]
+    #     half_needed = (len(int_v[int_idx]) - len(central_region)) // 2
+    #     noise_part = np.concatenate((left_part, right_part))
+    #     new_left = noise_part[:half_needed]
+    #     new_right = noise_part[half_needed:]
+
+    #     # replace nan values with zeroes at front and end of the waveform
+    #     desired_len = nan_part_len
+    #     zeros = np.zeros(len(new_left))
+    #     zero_pad_left = np.tile(zeros, (desired_len // len(new_left)) + 1)[:int(desired_len / 2)]
+    #     zero_pad_right = np.tile(zeros, (desired_len // len(new_left)) + 1)[-int(desired_len / 2) - 1:-1]
+
+    #     # adding all together, with signal peak at in the middle of the waveform
+    #     final_waveform = np.concatenate((zero_pad_left, new_left, central_region, new_right, zero_pad_right))
+    #     print('left:', len(new_left), 'central:', len(central_region), 'right:', len(new_right))
+    #     return final_waveform
+
     def get_csw_wf(self):
 
         self.nan_flag = np.full(self.param_shape, 0, dtype = int)
@@ -258,12 +309,28 @@ class ara_csw:
                     self.nan_flag[pols, sol] = 1
                     continue
                 shift_t = self.pad_t[:self.pad_num[ant], ant] - arr_del
+                #print("self.pad_t[:self.pad_num[ant], ant]: ", self.pad_t[:self.pad_num[ant], ant])
+                print("arr_del: ", arr_del)
+                #print("shift_t: ", shift_t)
                 dd_f = Akima1DInterpolator(shift_t, dd_wf_v)   
                 int_v = dd_f(self.time_pad)
                 int_idx = ~np.isnan(int_v)
+                np.set_printoptions(threshold=np.inf)
+                print("int_v: ", int_v)
                 self.bool_pad[int_idx, pols, sol] = True
                 self.norm_pad[int_idx, pols, sol] += self.sc_rms[self.good_chs[ant]]
-                self.zero_pad[int_idx, pols, sol] += int_v[int_idx]
+
+                #
+                #nan_part_length = len(self.zero_pad[~int_idx, pols, sol]) get_wf_rolling(self, int_v, arr_delay)
+                rolled_wf = self.get_wf_rolling(int_v, arr_del)
+                print("rolled_wf", rolled_wf)
+                print("rolled_wf.shape", rolled_wf.shape)
+
+                if (self.zero_pad[:, pols, sol].shape[0]-rolled_wf.shape[0])==1:
+                    rolled_wf=np.concatenate((rolled_wf,[0]))
+                self.zero_pad[:, pols, sol] += rolled_wf
+                #self.zero_pad[int_idx, pols, sol] += int_v[int_idx]
+
                 if self.use_debug:
                     wo_dd_f = Akima1DInterpolator(shift_t, self.pad_v[:self.pad_num[ant], ant])
                     int_v_wo_dd = wo_dd_f(self.time_pad)
