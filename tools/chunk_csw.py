@@ -76,7 +76,6 @@ def csw_collector(Data, Ped, analyze_blind_dat = False, use_l2 = False, no_tqdm 
 
     # loop over the events
     for evt in tqdm(range(num_evts), disable = no_tqdm):
-      #if evt == 0:
 
         if daq_qual_cut_sum[evt]:
             continue
