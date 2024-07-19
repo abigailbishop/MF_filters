@@ -161,13 +161,6 @@ class ara_csw:
             print('arrival time delay is on!')
 
     def get_detector_response(self):
-        
-        from tools.ara_matched_filter import get_psd
-        if self.sim_psd_path is None:
-            sc_freq_amp, sc_amp = get_psd(st = self.st, run = self.run, verbose = self.verbose, analyze_blind_dat = True)[1:]
-        else:
-            sc_freq_amp, sc_amp = get_psd(dat_type = 'baseline', sim_path = self.sim_psd_path)[1:]
-        self.sc_rms = 2 * np.nansum(sc_amp**2, axis = 0) / self.pad_len**2
 
         phase_path = '/home/mkim/analysis/MF_filters/data/sc_info/SC_Phase_from_sim.txt'
         if self.verbose:
@@ -179,11 +172,9 @@ class ara_csw:
         del phase_path, sc_p
         
         if self.use_debug:
-            self.sc_freq_amp = np.copy(sc_freq_amp)
-            self.sc_amp = np.copy(sc_amp)
             self.sc_freq_phase = np.copy(sc_freq_phase)
             self.sc_phase = np.copy(sc_phase)
-        del sc_freq_amp, sc_amp, sc_freq_phase, sc_phase
+        del sc_freq_phase, sc_phase
 
         if self.verbose:    
             print('detector response is on!')
@@ -282,7 +273,6 @@ class ara_csw:
                 int_v = dd_f(self.time_pad)
                 int_idx = ~np.isnan(int_v)
                 self.bool_pad[int_idx, pols, sol] = True
-                self.norm_pad[int_idx, pols, sol] += self.sc_rms[self.good_chs[ant]]
 
                 # find bin with the first nonnan value on the current antenna and sol
                 curr_ant_first_nonnan = np.where(~np.isnan(int_v))[0][0]
@@ -399,7 +389,7 @@ class ara_csw:
 
         ## clear pad
         self.bool_pad[:] = False
-        self.norm_pad[:] = 0
+        self.norm_pad[:] = 1
         self.zero_pad[:] = 0
 
         ## self~ self~
