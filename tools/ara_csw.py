@@ -317,8 +317,7 @@ class ara_csw:
         self.hill_max = csw_hill[self.hill_max_idx, self.pol_range[:, np.newaxis], self.sol_range[np.newaxis, :]] # (# of pols, # of rays)
 
         ## csw snr
-        self.snr_csw = self.get_p2p_multiple_array() # rms is already devided it. So, p2p is already snr
-        self.snr_csw /= 2 # (# of pols, # of rays) 
+        self.snr_csw = self.get_snr_multiple_array()
 
         ## sorting
         closeness = np.abs(self.range_pad - self.hill_max_idx[np.newaxis, :, :]) # (# of bins, # of pols, # of rays)
@@ -361,12 +360,14 @@ class ara_csw:
             self.cdf_ks = np.copy(cdf_fit)
         del range_norm, cdf, sort_nan
 
-    def get_p2p_multiple_array(self):
+    def get_snr_multiple_array(self):
 
         p2p = np.full(self.param_shape, np.nan, dtype = float)    
+        rms = np.full(self.param_shape, np.nan, dtype = float)  
         if self.use_debug:
             self.csw_wf_p2p = np.full((self.double_pad_len, num_pols, self.num_sols), np.nan, dtype = float)
             self.csw_wf_p2p_time = np.copy(self.csw_wf_p2p)
+            self.rms_pol_sol = np.full(self.param_shape, np.nan, dtype = float)  
 
         for p in range(num_pols):
             for s in range(self.num_sols):
@@ -381,9 +382,18 @@ class ara_csw:
                     self.csw_wf_p2p_time[:len(peak), p, s] = self.time_pad[peak_idx] 
 
                 p2p[p, s] = np.nanmax(np.abs(np.diff(peak)))
-                del upper_peak_idx, lower_peak_idx, peak_idx, peak, csw_each
+                del upper_peak_idx, lower_peak_idx, peak_idx, peak
 
-        return p2p
+                # split waveform in quarters, save rms as average rms of two lowest rms quarters
+                segmented_wf = np.array_split(csw_each[csw_each !=0], 4) 
+                rms_values = [np.sqrt(np.mean(segment**2)) for segment in segmented_wf]
+                sorted_rms = sorted(rms_values)
+                mean_of_two_lowest_rms = np.mean(sorted_rms[:2])
+                rms[p, s] = mean_of_two_lowest_rms
+
+                if self.use_debug: 
+                    self.rms_pol_sol[p, s] = rms[p, s]
+        return (p2p / 2) / rms
 
     def get_csw_params(self, pad_t, pad_v, pad_num, evt):
 
