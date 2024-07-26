@@ -168,9 +168,9 @@ def plot_ant_stats(
 
         file = h5py.File(lines.strip(), "r")
 
-        # Get third highest RPR for each file
-        data = np.array(file['snr'])
-        data = np.sort(data, axis=0)[-index_from_highest]
+        # Get third highest value for each event
+        data = np.array(file[analysis_variable])
+        data = np.sort(np.nan_to_num(data,-1), axis=0)[-index_from_highest]
 
         # Check trigger type and save to array
         trig = np.array(file.get('trig_type'))
@@ -490,7 +490,7 @@ def plot_zen_phi(
     fig, ax = hist2d(
         phis[:current_index], zeniths[:current_index], 
         bins=bins, save_name=save_name, figsize=figsize,
-        cmap = "Purples", norm=norm,
+        cmap = cmap, norm=norm,
         x_label="Reconstructed Azimuthal Angle [deg]",
         y_label="Reconstructed Elevation Angle [deg]",
         title=plot_title,
