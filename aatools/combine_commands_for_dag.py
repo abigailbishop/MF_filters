@@ -31,12 +31,20 @@ def make_shell_script(
             commands.append(rf'printf "\n{squiggles}\n"')
             commands.append(rf'printf "Running script for {key}\n"')
             qual_type = int(key[-3]) if "qual_cut" in key else 1
-            commands.append(
-                f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
-                f"-k {key} -s {station} -r {run} -b {blind_dat} "
-                f"-c {condor_run} -n {not_override} -q {qual_type} "
-                f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
-            )
+            if key == "first_ped": 
+                commands.append(
+                    f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
+                    f"-k ped -s {station} -r {run} -b {blind_dat} "
+                    f"-c {condor_run} -n {not_override} -q {qual_type} "
+                    f"-t {no_tqdm} -l {l2_data} -qc False "
+                )
+            else: 
+                commands.append(
+                    f"python3 /home/abishop/ara/a23/MF_filters/scripts/script_executor.py "
+                    f"-k {key} -s {station} -r {run} -b {blind_dat} "
+                    f"-c {condor_run} -n {not_override} -q {qual_type} "
+                    f"-t {no_tqdm} -l {l2_data} -qc {include_qual_cut} "
+                )
             commands.append(rf'printf "Done!\n\n\n"')
             commands.append(rf'printf "\n"')
         commands.append(rf'printf "\n"')
@@ -101,7 +109,7 @@ def main():
 
     if args.full_pipeline: 
         keys = [
-            'sub_info', 'qual_cut_1st', 'ped', 'baseline', 
+            'sub_info', 'first_ped', 'qual_cut_1st', 'ped', 'baseline', 
             'cw_flag', 'cw_band', 'cw_ratio', 'qual_cut_2nd',
             'ped', 'rayl', 'rayl_nb', 'snr', 
             'reco_ele_lite', 'rpr', 'vertex', 'mf', 'qual_cut_3rd',
