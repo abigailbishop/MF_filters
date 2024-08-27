@@ -31,6 +31,8 @@ else:
     plotdir = args.plotdir
 if not os.path.exists(plotdir):
     raise ValueError(f"Requested plot directory does not exist: {plotdir}")
+save_name = f"{plotdir}/skyradz_A{args.station}_R{args.run}_E{args.event}.png",
+print(f"Will save plot to: {save_name}")
 
 if args.title == None:
     title = f"ARA0{args.station}, Run {args.run}, Event {args.event}, Polarization {args.polarization}, Solution {args.solution}"
@@ -41,7 +43,7 @@ else:
 reco_file = h5py.File(reco_file_path)
 plot_rad_zen_coef(
     reco_file, args.event, pol=args.polarization, sol=args.solution, title=title,
-    save_name=f"{plotdir}/skyradz_A{args.station}_R{args.run}_E{args.event}.png",
+    save_name=save_name,
     norm=args.cbar_norm, cbar_min=args.cbar_min, cbar_max=args.cbar_max
 )
 reco_file.close()
