@@ -499,6 +499,104 @@ def plot_zen_phi(
 
     return fig, ax
 
+def plot_event_zen_phi(
+    reco_file, event, radius_index,
+    pol=0, sol=0, save_name=None, title=None,
+    cmap="magma_r", norm=None, cbar_min=None, cbar_max=None,
+    phi_step=1.0
+):
+    """"
+    For an event index in the provided h5 reconstruction file, plot the 
+      correlation coefficients calculated for the various azimuths and zeniths.
+      This will look a tad funky because we only save the best correlation 
+      coefficient and its corresponding azimuth for each zenith we reconstruct
+      for, as opposed to saving the correlation coefficient for each phi and 
+      zentih.
+
+    Parameters
+    ----------
+    reco_file : h5py._hl.files.File
+        The h5 file (already loaded into python with h5py.File()) with data
+          to be plotted.
+    event : int
+        The index in the `reco_file` corresponding to the event to be plotted.
+    pol : int
+        The index of the polarization that was reconstructed.
+    sol : int
+        The index of the ray solution that was reconstructed.
+    save_name : str
+        Path to where you would like to save the created plot.
+    cmap : str or matplotlib.colors.Colormap
+        Colormap with which you'd like the heatmap to be plotted.
+    norm: str or matplotlib.colors.Normalize
+        If not provided, colorbar has a linear scale. Can provide "log" to
+          request a logarithmic scale or "symlog" for a logarithmic scale with
+          positive and negative values.
+    cbar_min : float
+        Value corresponding to the minimum value on the color bar.
+    cbar_max : float
+        Value corresponding to the maximum value on the colorbar.
+    
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The figure that was plotted.
+    ax : matplotlib.axes._axes.Axes
+        The axes of the figure that was plotted.
+    """
+
+    radius = reco_file['radius'][radius_index]
+    print(f"Plotting reconstruction for radius {radius}m")
+
+    zeniths = reco_file['theta']
+    coefs = reco_file['coef'][pol, :, radius_index, sol, event]
+    coords = reco_file['coord'][pol, :, radius_index, sol, event]
+
+    min_phi = np.nanmin(coords)
+    max_phi = np.nanmax(coords)
+    phis = np.arange(min_phi, max_phi+phi_step, phi_step)
+
+    # Initialize the array of values we'll be plotting 
+    # Will plot data for all zeniths and azimuths
+    plotter = np.full( 
+        ( len(zeniths), len(phis) ),
+        np.nan # Initialize to values of `nan` which will appear blank on plot
+    )
+
+    for zenith_index in range( len(coords) ):
+        correlation_coeff = coefs[zenith_index]
+        phi = coords[zenith_index]
+        phi_index = int( (phi - min_phi) / phi_step )
+        plotter[zenith_index][phi_index] = correlation_coeff
+
+    # Calculate horizontal and vertical extents of the plotting array
+    extent = [min_phi, max_phi, zeniths[-1], zeniths[0]]
+ 
+    # Plot the plotter array
+    fig, ax = plt.subplots()   
+    mappable = ax.imshow(plotter, extent=extent, cmap=cmap, 
+                         origin="upper", aspect='auto', norm=norm) 
+    
+    # Add Labels
+    ax.set_xlabel("Reconstruction Azimuth [deg]")
+    ax.set_ylabel("Reconstruction Zeniths [deg]")
+    if title==None: 
+        ax.set_title(f"Event {event}, Polarization {pol}, Solution {sol}")
+    else: 
+        ax.set_title(title)
+
+    # Build colorbar
+    if cbar_min !=None: mappable.norm.vmin = cbar_min
+    if cbar_max !=None: mappable.norm.vmax = cbar_max
+    plt.colorbar(mappable=mappable, label="Correlation Coefficient")
+
+    # Cleanup and save plot (if requested)
+    plt.tight_layout()
+    if save_name!=None: plt.savefig(save_name, dpi=400)
+        
+    return fig, ax
+
+
 def plot_rad_zen_coef(
     reco_file, event, 
     pol=0, sol=0, save_name=None, title=None,
