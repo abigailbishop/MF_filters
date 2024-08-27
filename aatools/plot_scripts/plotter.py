@@ -30,6 +30,33 @@ from collections.abc import Iterable
 purple = "rebeccapurple"
 yellow = "darkgoldenrod"
 
+def a2_run2config(run):
+    if    2275 <= run <=  3463: return 1
+    elif  1448 <= run <=  2274: return 2
+    elif  3465 <= run <=  4027: return 3
+    elif  4029 <= run <=  6481: return 4
+    elif  8100 <= run <=  9401: return 4
+    elif  6500 <= run <=  9748: return 5
+    elif  9505 <= run <=  9748: return 5
+    elif  9749 <= run <= 15524: return 6
+    elif 15527 <= run <= 17961: return 7
+    else: 
+        raise ValueError(f"Provided run {run} fits in no configuration")
+
+def a3_run2config(run):
+    if    1450 <= run <=  1901: return 1
+    elif   472 <= run <=  1448: return 2
+    elif  3105 <= run <=  6004: return 3
+    elif  7658 <= run <=  7808: return 3
+    elif  6005 <= run <=  7653: return 4
+    elif  1922 <= run <=  3103: return 5
+    elif 10001 <= run <= 12871: return 6
+    elif 12873 <= run <= 14990: return 7
+    elif 14991 <= run <= 16481: return 8
+    elif 16487 <= run <= 28573: return 9
+    else:
+        raise ValueError(f"Provided run {run} fits in no configuration")
+
 def int_to_shorthand(number): 
     """
     Take in an integer, and return its shorthand as a string. Ex: 1 -> 1st
