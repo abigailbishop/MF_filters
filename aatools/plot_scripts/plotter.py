@@ -501,7 +501,7 @@ def plot_zen_phi(
 
 def plot_rad_zen_coef(
     reco_file, event, 
-    pol=0, sol=0, save_name=None,
+    pol=0, sol=0, save_name=None, title=None,
     cmap="Purples", norm=None, cbar_min=None, cbar_max=None, 
 ):
     """"
@@ -581,7 +581,10 @@ def plot_rad_zen_coef(
     # Add Labels
     ax.set_xlabel("Reconstruction Radii [m]")
     ax.set_ylabel("Reconstruction Zeniths [deg]")
-    ax.set_title(f"Event {event}, Polarization {pol}, Solution {sol}")
+    if title==None: 
+        ax.set_title(f"Event {event}, Polarization {pol}, Solution {sol}")
+    else: 
+        ax.set_title(title)
 
     # Build colorbar
     if cbar_min !=None: mappable.norm.vmin = cbar_min
