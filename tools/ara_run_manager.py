@@ -203,7 +203,7 @@ class run_info_loader:
         dat_goal = '0'
         dat_ls_path = '0'
 
-        list_path = '../data/run_list/'
+        list_path = os.path.expandvars("$MFFILTERS_PATH")+'/data/run_list/'
         list_name = f'{list_path}A{self.st}_run_list{blind_type}.txt'        
         if verbose:
             print(f'list_path:{list_name}')
