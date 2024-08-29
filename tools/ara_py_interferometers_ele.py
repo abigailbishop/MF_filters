@@ -279,7 +279,7 @@ class py_interferometers:
         if self.verbose:
             print('coval time is on!')
 
-    def get_coval_sample(self):
+    def get_coval_sample(self, return_skymap=False):
         """
         Get correlation value for the given sample.
         """
@@ -425,7 +425,10 @@ class py_interferometers:
 
             del neg_idx
 
-        del sky_map, coef_phi_max_idx
+        del coef_phi_max_idx
+
+        if return_skymap:
+            return sky_map
 
     def get_padded_wf(self):
         """
@@ -476,7 +479,7 @@ class py_interferometers:
         # Calculate hilbert envelope over the cross correlated waveforms
         self.corr = np.abs(hilbert(self.corr, axis = 0))
     
-    def get_sky_map(self, pad_v, weights = None):
+    def get_sky_map(self, pad_v, weights = None, return_skymap=False):
         """
         For the provided list of waveforms in a detector in `pad_v`, pad the
           waveforms, cross correlate them, and get coval.
@@ -503,9 +506,12 @@ class py_interferometers:
             self.corr *= weights
 
         # coval
-        self.get_coval_sample()
+        sky_map = self.get_coval_sample(return_skymap=return_skymap)
         if self.use_debug == False:
             del self.corr
+
+        if return_skymap:
+            return sky_map
 
 def get_products(weights, pairs, v_pairs_len):
     """
